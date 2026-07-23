@@ -1,11 +1,15 @@
 import { createContext, useState, useEffect } from 'react';
 
+/**
+ * ThemeContext
+ * Provides dark/light theme management with localStorage persistence.
+ */
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
-    return savedTheme ? savedTheme === 'dark' : true; // Default to dark mode for premium aesthetic
+    return savedTheme ? savedTheme === 'dark' : false; // Default to light mode or saved preference
   });
 
   useEffect(() => {
@@ -24,8 +28,9 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleTheme, theme: isDarkMode ? 'dark' : 'light' }}>
       {children}
     </ThemeContext.Provider>
   );
 };
+

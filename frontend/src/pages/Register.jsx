@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { useAuth } from '../hooks/useAuth';
 import { fadeIn } from '../animations/variants';
+import { APP_NAME, APP_TAGLINE } from '../utils/constants';
 
 /**
- * Register Page Component
- * Clean Apple/Stripe inspired user registration page.
+ * Register Page Component - NOVACART
+ * Features Password Strength Meter, Terms Acceptance, & NOVACART Account Creation.
  */
 const Register = () => {
   const navigate = useNavigate();
@@ -21,6 +22,23 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
+
+  // Password Strength Calculation
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { label: 'Empty', score: 0, color: 'bg-slate-200' };
+    let score = 0;
+    if (pass.length >= 6) score++;
+    if (pass.length >= 10) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+    if (score <= 2) return { label: 'Weak', score: 25, color: 'bg-rose-500' };
+    if (score <= 4) return { label: 'Medium', score: 65, color: 'bg-amber-500' };
+    return { label: 'Strong (Great)', score: 100, color: 'bg-emerald-500' };
+  };
+
+  const strength = getPasswordStrength(password);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -63,18 +81,19 @@ const Register = () => {
       animate="visible"
       className="max-w-md mx-auto py-8 md:py-16"
     >
-      <div className="p-8 md:p-10 bg-white dark:bg-dark-card border border-gray-200/80 dark:border-dark-border rounded-3xl shadow-xl space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+      <div className="p-8 md:p-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl space-y-6">
+        <div className="text-center space-y-1">
+          <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
+            JOIN {APP_NAME}
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
             Create your Account
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Join ShopSphere to get personalized AI recommendations and fast checkout
-          </p>
+          <p className="text-xs text-slate-500">{APP_TAGLINE}</p>
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-xs font-semibold text-red-600 dark:text-red-400 text-center">
+          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 text-xs font-bold text-rose-600 text-center">
             {error}
           </div>
         )}
@@ -83,7 +102,7 @@ const Register = () => {
           <Input
             label="Full Name"
             required
-            placeholder="Alex Mercer"
+            placeholder="Rahul Sharma"
             value={name}
             onChange={(e) => setName(e.target.value)}
             leftIcon={<FiUser className="w-4 h-4" />}
@@ -93,21 +112,40 @@ const Register = () => {
             label="Email Address"
             type="email"
             required
-            placeholder="you@example.com"
+            placeholder="rahul@novacart.in"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<FiMail className="w-4 h-4" />}
           />
 
-          <Input
-            label="Password"
-            type="password"
-            required
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            leftIcon={<FiLock className="w-4 h-4" />}
-          />
+          <div className="space-y-1">
+            <Input
+              label="Password"
+              type="password"
+              required
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              leftIcon={<FiLock className="w-4 h-4" />}
+            />
+
+            {password && (
+              <div className="space-y-1 pt-1">
+                <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                  <span>Password Strength:</span>
+                  <span className={strength.score === 100 ? 'text-emerald-500' : 'text-slate-500'}>
+                    {strength.label}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    className={`h-full ${strength.color} transition-all duration-300`}
+                    style={{ width: `${strength.score}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <Input
             label="Confirm Password"
@@ -120,36 +158,33 @@ const Register = () => {
           />
 
           <div className="pt-1">
-            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 dark:text-gray-400 select-none">
+            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-400 font-medium select-none">
               <input
                 type="checkbox"
                 required
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:bg-dark-bg"
+                className="mt-0.5 rounded border-slate-300 text-indigo-600"
               />
               <span>
                 I agree to the{' '}
-                <a href="#terms" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+                <a href="#terms" className="font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline">
                   Terms of Service
                 </a>{' '}
-                and{' '}
-                <a href="#privacy" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
-                  Privacy Policy
-                </a>
+                and GST Invoice policies.
               </span>
             </label>
           </div>
 
           <Button type="submit" fullWidth rightIcon={<FiArrowRight className="w-4 h-4" />}>
-            Create Account
+            Create {APP_NAME} Account
           </Button>
         </form>
 
-        <div className="text-center pt-2 border-t border-gray-100 dark:border-dark-border/60">
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500 font-medium">
             Already have an account?{' '}
-            <Link to="/login" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+            <Link to="/login" className="font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline">
               Sign In
             </Link>
           </p>
@@ -160,4 +195,3 @@ const Register = () => {
 };
 
 export default Register;
-

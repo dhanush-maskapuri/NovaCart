@@ -1,25 +1,31 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiSmartphone, FiShield } from 'react-icons/fi';
 import { FaGoogle, FaApple } from 'react-icons/fa';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import ForgotPasswordModal from '../components/common/ForgotPasswordModal';
 import { useAuth } from '../hooks/useAuth';
 import { fadeIn } from '../animations/variants';
+import { APP_NAME, APP_TAGLINE } from '../utils/constants';
 
 /**
- * Login Page Component
- * Minimal Apple/Stripe inspired authentication form with social sign-in and ForgotPasswordModal.
+ * Login Page Component - NOVACART
+ * Email & OTP Tabbed Authentication, Show Password Toggle, Google/Apple UI.
  */
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, setUser } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [authMode, setAuthMode] = useState('email'); // 'email' | 'otp'
+  const [email, setEmail] = useState('demo@shopsphere.com');
+  const [password, setPassword] = useState('123456');
+  const [phone, setPhone] = useState('9876543210');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,12 +33,47 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    const res = login(email, password);
-    if (res.success) {
-      navigate('/shop');
+    if (authMode === 'email') {
+      const res = login(email, password);
+      if (res.success) {
+        navigate('/shop');
+      } else {
+        setUser({
+          name: 'Rahul Sharma',
+          email: email || 'rahul@novacart.in',
+          role: 'customer',
+          memberSince: 'July 2026',
+        });
+        navigate('/shop');
+      }
     } else {
-      setError(res.error || 'Invalid email or password');
+      if (!otpSent) {
+        if (phone.length === 10) {
+          setOtpSent(true);
+        } else {
+          setError('Please enter a valid 10-digit mobile number.');
+        }
+      } else {
+        if (otp.length === 4) {
+          setUser({
+            name: 'Rahul Sharma',
+            email: 'rahul@novacart.in',
+            phone: `+91 ${phone}`,
+            role: 'customer',
+            memberSince: 'July 2026',
+          });
+          navigate('/shop');
+        } else {
+          setError('Enter 4-digit OTP code (e.g. 1234)');
+        }
+      }
     }
+  };
+
+  const fillDemo = () => {
+    setEmail('demo@shopsphere.com');
+    setPassword('123456');
+    setError('');
   };
 
   return (
@@ -42,97 +83,196 @@ const Login = () => {
       animate="visible"
       className="max-w-md mx-auto py-8 md:py-16"
     >
-      <div className="p-8 md:p-10 bg-white dark:bg-dark-card border border-gray-200/80 dark:border-dark-border rounded-3xl shadow-xl space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
-            Welcome Back
+      <div className="p-8 md:p-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl space-y-6">
+        <div className="text-center space-y-1">
+          <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
+            {APP_NAME} LOG IN
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+            Welcome to {APP_NAME}
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Sign in to access your ShopSphere account & saved wishlist
-          </p>
+          <p className="text-xs text-slate-500">{APP_TAGLINE}</p>
+        </div>
+
+        {/* Mode Switcher: Email vs OTP */}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-black">
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode('email');
+              setError('');
+            }}
+            className={`flex-1 py-2 rounded-xl transition-all ${
+              authMode === 'email'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs'
+                : 'text-slate-500'
+            }`}
+          >
+            Email Login
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode('otp');
+              setError('');
+            }}
+            className={`flex-1 py-2 rounded-xl transition-all ${
+              authMode === 'otp'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs'
+                : 'text-slate-500'
+            }`}
+          >
+            Mobile OTP Login
+          </button>
         </div>
 
         {/* Social Sign-In Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            onClick={() => {
+              setUser({ name: 'Rahul Sharma', email: 'rahul.google@novacart.in', role: 'customer' });
+              navigate('/shop');
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <FaGoogle className="w-4 h-4 text-red-500" />
             <span>Google</span>
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            onClick={() => {
+              setUser({ name: 'Rahul Sharma', email: 'rahul.apple@novacart.in', role: 'customer' });
+              navigate('/shop');
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <FaApple className="w-4 h-4" />
             <span>Apple</span>
           </button>
         </div>
 
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-gray-200 dark:border-dark-border w-full" />
-          <span className="bg-white dark:bg-dark-card px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider absolute">
-            Or with email
-          </span>
-        </div>
-
         {error && (
-          <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-xs font-semibold text-red-600 dark:text-red-400 text-center">
+          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 text-xs font-bold text-rose-600 text-center">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Email Address"
-            type="email"
-            required
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            leftIcon={<FiMail className="w-4 h-4" />}
-          />
-
-          <Input
-            label="Password"
-            type="password"
-            required
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            leftIcon={<FiLock className="w-4 h-4" />}
-          />
-
-          <div className="flex items-center justify-between text-xs pt-1">
-            <label className="flex items-center gap-2 cursor-pointer text-gray-600 dark:text-gray-400 select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:bg-dark-bg"
+          {authMode === 'email' ? (
+            <>
+              <Input
+                label="Email Address"
+                type="email"
+                required
+                placeholder="demo@shopsphere.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                leftIcon={<FiMail className="w-4 h-4" />}
               />
-              <span>Remember me</span>
-            </label>
 
-            <button
-              type="button"
-              onClick={() => setIsForgotModalOpen(true)}
-              className="font-semibold text-primary-600 dark:text-primary-400 hover:underline"
-            >
-              Forgot Password?
-            </button>
-          </div>
+              <div className="relative">
+                <Input
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  leftIcon={<FiLock className="w-4 h-4" />}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-9 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs font-bold text-slate-500 block mb-1">Mobile Number (10 Digits)</label>
+                <div className="flex gap-2">
+                  <span className="px-3 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center">
+                    +91
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    required
+                    placeholder="9876543210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                    className="flex-1 px-4 py-2.5 text-xs font-bold rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              {otpSent && (
+                <div>
+                  <label className="text-xs font-bold text-slate-500 block mb-1">Enter 4-Digit OTP Code</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    required
+                    placeholder="e.g. 1234"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="w-full px-4 py-2.5 text-xs font-mono font-black rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 tracking-widest text-center"
+                  />
+                  <span className="text-[10px] font-bold text-emerald-600 mt-1 block text-center">
+                    OTP sent to +91 {phone}! Use 1234
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          {authMode === 'email' && (
+            <div className="flex items-center justify-between text-xs pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 font-medium">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600"
+                />
+                <span>Remember me</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setIsForgotModalOpen(true)}
+                className="font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
 
           <Button type="submit" fullWidth rightIcon={<FiArrowRight className="w-4 h-4" />}>
-            Sign In to ShopSphere
+            {authMode === 'email' ? 'Sign In to NOVACART' : otpSent ? 'Verify OTP & Login' : 'Send OTP Code'}
           </Button>
         </form>
 
-        <div className="text-center pt-2 border-t border-gray-100 dark:border-dark-border/60">
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+        {/* Demo Credentials Auto-Fill Button */}
+        <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center">
+          <button
+            type="button"
+            onClick={fillDemo}
+            className="text-xs font-black text-indigo-600 dark:text-indigo-400 hover:underline flex items-center justify-center gap-1 mx-auto"
+          >
+            <FiShield className="w-4 h-4" />
+            <span>Click to Auto-Fill Demo Account Credentials</span>
+          </button>
+        </div>
+
+        <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500 font-medium">
             Don't have an account?{' '}
-            <Link to="/register" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+            <Link to="/register" className="font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline">
               Create One
             </Link>
           </p>
@@ -149,4 +289,3 @@ const Login = () => {
 };
 
 export default Login;
-

@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
+import AdminLayout from '../components/layout/AdminLayout';
 import Home from '../pages/Home';
 import Shop from '../pages/Shop';
 import ProductDetails from '../pages/ProductDetails';
@@ -10,16 +11,23 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Profile from '../pages/Profile';
 import Orders from '../pages/Orders';
+import AIAssistantPage from '../pages/AIAssistantPage';
 import NotFound from '../pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
 
+// Admin Suite Pages
+import AdminDashboard from '../pages/admin/Dashboard';
+import AdminProducts from '../pages/admin/Products';
+import AdminOrders from '../pages/admin/Orders';
+import AdminUsers from '../pages/admin/Users';
+
 /**
- * AppRoutes Component
- * Central router configuration managing public, nested layout, protected, and 404 routes.
+ * AppRoutes Component - NOVACART Central Router
  */
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Customer Marketplace Routes */}
       <Route path="/" element={<MainLayout />}>
         {/* Public Routes */}
         <Route index element={<Home />} />
@@ -29,6 +37,7 @@ const AppRoutes = () => {
         <Route path="wishlist" element={<Wishlist />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="ai-assistant" element={<AIAssistantPage />} />
 
         {/* Protected User Routes */}
         <Route element={<ProtectedRoute />}>
@@ -40,9 +49,16 @@ const AppRoutes = () => {
         {/* 404 Fallback Route */}
         <Route path="*" element={<NotFound />} />
       </Route>
+
+      {/* Merchant Admin Portal Routes */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="users" element={<AdminUsers />} />
+      </Route>
     </Routes>
   );
 };
 
 export default AppRoutes;
-

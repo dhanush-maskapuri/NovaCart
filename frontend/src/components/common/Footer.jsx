@@ -9,14 +9,41 @@ import {
   FiMail,
   FiPhone,
   FiMapPin,
+  FiShield,
+  FiTruck,
+  FiRefreshCw,
+  FiFileText,
 } from 'react-icons/fi';
+import { APP_NAME, APP_TAGLINE } from '../../utils/constants';
 
 /**
- * Footer Component
- * Comprehensive responsive multi-column footer with brand section, navigation links, support details, social media links, and copyright banner.
+ * Footer Component - NOVACART ("India's Smart Marketplace")
  */
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+
+  const trustFeatures = [
+    {
+      icon: FiShield,
+      title: '100% Authentic Products',
+      desc: 'Sourced directly from verified Indian & global brands',
+    },
+    {
+      icon: FiTruck,
+      title: 'Express 10-Min Delivery',
+      desc: 'Hyperlocal grocery delivery via NovaMart hubs',
+    },
+    {
+      icon: FiRefreshCw,
+      title: '7-Day Easy Returns',
+      desc: 'Instant UPI refunds directly to GPay or PhonePe',
+    },
+    {
+      icon: FiFileText,
+      title: 'GST Tax Invoice',
+      desc: 'Input tax credit ready invoices for business buyers',
+    },
+  ];
 
   const socialLinks = [
     { icon: FiTwitter, href: 'https://twitter.com', label: 'Twitter' },
@@ -26,24 +53,44 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="border-t border-gray-200 dark:border-dark-border bg-white dark:bg-dark-bg mt-auto transition-colors duration-200">
+    <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 mt-auto transition-colors duration-300">
+      {/* Top Trust Badges Strip */}
+      <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 py-8">
+        <div className="container mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {trustFeatures.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <div key={idx} className="flex items-start gap-3.5 p-3 rounded-2xl">
+                <div className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">{item.title}</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{item.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Footer Links Container */}
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
           {/* Brand Column */}
-          <div className="flex flex-col gap-4">
-            <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-primary-600 dark:text-primary-400">
-              <div className="p-1.5 bg-primary-100 dark:bg-primary-950/60 rounded-xl text-primary-600 dark:text-primary-400">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <Link to="/" className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight">
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
                 <FiShoppingBag className="w-5 h-5" />
               </div>
-              <span className="bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-400 dark:to-primary-200 bg-clip-text text-transparent">
-                ShopSphere
-              </span>
+              <span className="text-xl font-black text-gradient">{APP_NAME}</span>
             </Link>
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-              Your premium destination for modern e-commerce shopping. Curated quality products delivered right to your doorstep.
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm">
+              {APP_NAME} ({APP_TAGLINE}) is India's premier modern marketplace connecting top Indian brands, 10-minute grocery hubs, flagship electronics, and ethnic fashion with instant UPI checkout.
             </p>
-            {/* Social Icons */}
-            <div className="flex items-center gap-3 mt-2">
+
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs font-bold text-slate-400 mr-2">Follow Us:</span>
               {socialLinks.map((social) => {
                 const Icon = social.icon;
                 return (
@@ -52,10 +99,9 @@ const Footer = () => {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={social.label}
                     whileHover={{ y: -3, scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 rounded-lg bg-gray-100 dark:bg-dark-card text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   >
                     <Icon className="w-4 h-4" />
                   </motion.a>
@@ -64,91 +110,116 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Links Column */}
+          {/* Quick Hubs */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-bold tracking-wider uppercase text-gray-900 dark:text-gray-100">
-              Quick Links
+            <h4 className="text-xs font-bold tracking-wider uppercase text-slate-900 dark:text-slate-100">
+              Marketplace Hubs
             </h4>
-            <ul className="flex flex-col gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+            <ul className="flex flex-col gap-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
               <li>
-                <Link to="/" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                  Home
+                <Link to="/shop?category=groceries" className="hover:text-indigo-600 transition-colors">
+                  NovaMart (10-Min Groceries)
                 </Link>
               </li>
               <li>
-                <Link to="/shop" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                  Shop Products
+                <Link to="/shop?category=mobiles" className="hover:text-indigo-600 transition-colors">
+                  NovaTech (5G Mobiles & Laptops)
                 </Link>
               </li>
               <li>
-                <Link to="/wishlist" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                  My Wishlist
+                <Link to="/shop?category=fashion" className="hover:text-indigo-600 transition-colors">
+                  NovaFashion (Ethnic & Streetwear)
                 </Link>
               </li>
               <li>
-                <Link to="/cart" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                  Shopping Cart
+                <Link to="/shop?category=furniture" className="hover:text-indigo-600 transition-colors">
+                  NovaHome (Furniture & Decor)
+                </Link>
+              </li>
+              <li>
+                <Link to="/ai-assistant" className="hover:text-purple-500 font-bold transition-colors">
+                  ⚡ AI Shopping Assistant
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Customer Support Column */}
+          {/* Customer Support */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-bold tracking-wider uppercase text-gray-900 dark:text-gray-100">
-              Customer Care
+            <h4 className="text-xs font-bold tracking-wider uppercase text-slate-900 dark:text-slate-100">
+              Customer Support
             </h4>
-            <ul className="flex flex-col gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+            <ul className="flex flex-col gap-2.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
               <li>
-                <Link to="/orders" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                  Track Order
+                <Link to="/orders" className="hover:text-indigo-600 transition-colors">
+                  Track Order Shipment Timeline
                 </Link>
               </li>
               <li>
-                <span className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer">
-                  Shipping & Returns
-                </span>
+                <Link to="/profile" className="hover:text-indigo-600 transition-colors">
+                  My Profile & Indian Addresses
+                </Link>
               </li>
               <li>
-                <span className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer">
-                  FAQs & Help Center
-                </span>
+                <Link to="/cart" className="hover:text-indigo-600 transition-colors">
+                  GST Invoice & Cart Breakdown
+                </Link>
               </li>
               <li>
-                <span className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer">
-                  Privacy Policy
-                </span>
+                <Link to="/admin" className="hover:text-indigo-600 transition-colors font-bold">
+                  Merchant / Admin Suite
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Contact Column */}
+          {/* Contact & HQ */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-sm font-bold tracking-wider uppercase text-gray-900 dark:text-gray-100">
-              Get In Touch
+            <h4 className="text-xs font-bold tracking-wider uppercase text-slate-900 dark:text-slate-100">
+              Corporate Headquarters
             </h4>
-            <ul className="flex flex-col gap-3 text-sm text-gray-600 dark:text-gray-400">
-              <li className="flex items-center gap-2.5">
-                <FiMapPin className="w-4 h-4 text-primary-600 shrink-0" />
-                <span>123 Market Street, Tech City, USA</span>
+            <ul className="flex flex-col gap-3 text-xs text-slate-600 dark:text-slate-400 font-medium">
+              <li className="flex items-start gap-2.5">
+                <FiMapPin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                <span>{APP_NAME} Technologies Pvt. Ltd., Embassy Tech Village, Outer Ring Road, Bengaluru, Karnataka 560103</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <FiPhone className="w-4 h-4 text-primary-600 shrink-0" />
-                <span>+1 (800) 555-SHOPSPHERE</span>
+                <FiPhone className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>+91 1800-419-7467 (Toll-Free)</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <FiMail className="w-4 h-4 text-primary-600 shrink-0" />
-                <span>support@shopsphere.com</span>
+                <FiMail className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>support@novacart.in</span>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Copyright Line */}
-        <div className="border-t border-gray-100 dark:border-dark-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400">
-          <p>&copy; {currentYear} ShopSphere. All rights reserved.</p>
-          <p className="flex items-center gap-1">
-            Built with React 18, Vite, Tailwind CSS & Framer Motion.
+        {/* Accepted Payment Methods Badge Banner */}
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-8 pb-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <span>Accepted Payments:</span>
+            <span className="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 font-mono text-[11px]">
+              GPay / PhonePe / Paytm UPI
+            </span>
+            <span className="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 font-mono text-[11px]">
+              RuPay / Visa / Mastercard
+            </span>
+            <span className="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 font-mono text-[11px]">
+              HDFC / ICICI NetBanking
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-400">
+            GSTIN: <span className="font-mono text-slate-600 dark:text-slate-300">29AAAAA0000A1Z5</span>
+          </p>
+        </div>
+
+        {/* Copyright Line */}
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <p>&copy; {currentYear} {APP_NAME} Technologies Pvt. Ltd. All rights reserved.</p>
+          <p className="text-slate-400">
+            Engineered with React 18, Tailwind CSS & Framer Motion
           </p>
         </div>
       </div>
@@ -157,4 +228,3 @@ const Footer = () => {
 };
 
 export default Footer;
-

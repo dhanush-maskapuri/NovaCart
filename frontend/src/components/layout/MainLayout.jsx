@@ -2,17 +2,18 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../common/Navbar';
 import Footer from '../common/Footer';
+import MobileBottomNav from '../common/MobileBottomNav';
 import { fadeIn } from '../../animations/variants';
 
 /**
- * MainLayout Component
- * Root layout structure providing sticky Navbar header, page transitions for Outlet, and responsive Footer.
+ * MainLayout Component - NOVACART Layout Wrapper
+ * Sticky Navbar header, animated page transitions for Outlet, responsive Footer, and MobileBottomNav.
  */
 const MainLayout = () => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-gray-100 transition-colors duration-200 selection:bg-primary-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-indigo-600 selection:text-white pb-16 lg:pb-0 font-sans">
       <Navbar />
       <AnimatePresence mode="wait">
         <motion.main
@@ -27,9 +28,9 @@ const MainLayout = () => {
         </motion.main>
       </AnimatePresence>
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 };
 
 export default MainLayout;
-

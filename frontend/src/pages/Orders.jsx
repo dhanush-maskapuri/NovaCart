@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiPackage,
@@ -10,25 +10,87 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiLock,
+  FiMapPin,
+  FiZap,
 } from 'react-icons/fi';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Breadcrumb from '../components/common/Breadcrumb';
 import EmptyState from '../components/common/EmptyState';
-import Modal from '../components/common/Modal';
+import InvoiceModal from '../components/invoice/InvoiceModal';
+import OrderTrackingModal from '../components/orders/OrderTrackingModal';
 import { useAuth } from '../hooks/useAuth';
 import { products } from '../data/products';
 import { fadeIn } from '../animations/variants';
+import { formatCurrency, formatDate } from '../utils/formatters';
 
 /**
- * Orders Page Component
- * Order history timeline, status tracker, and invoice card modal.
+ * Orders Page Component - Indian Marketplace Order History & Live Tracking
  */
 const Orders = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+
+  const [orders, setOrders] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [expandedOrderId, setExpandedOrderId] = useState('ORD-9842');
+  const [selectedTrackingOrder, setSelectedTrackingOrder] = useState(null);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [showOrderSuccessToast, setShowOrderSuccessToast] = useState(false);
+
+  useEffect(() => {
+    // Load orders from localStorage or default mock orders
+    const savedOrders = JSON.parse(localStorage.getItem('shopsphere_orders') || '[]');
+    if (savedOrders.length > 0) {
+      setOrders(savedOrders);
+      setExpandedOrderId(savedOrders[0].id);
+    } else {
+      const defaultMock = [
+        {
+          id: 'ORD-98421',
+          createdAt: new Date().toISOString(),
+          totalAmount: 2499,
+          status: 'Out for Delivery',
+          paymentMethod: 'UPI (Google Pay)',
+          shippingAddress: {
+            name: 'Rahul Sharma',
+            phone: '+91 9876543210',
+            street: '42, Barakhamba Road, Connaught Place',
+            city: 'New Delhi',
+            state: 'Delhi',
+            pincode: '110001',
+          },
+          items: [{ product: products[0], quantity: 1 }],
+          deliveryPartner: 'Shadowfax Express Rider',
+          trackingNumber: 'SFX-908123984',
+        },
+        {
+          id: 'ORD-84102',
+          createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+          totalAmount: 9995,
+          status: 'Delivered',
+          paymentMethod: 'Credit Card (RuPay)',
+          shippingAddress: {
+            name: 'Rahul Sharma',
+            phone: '+91 9876543210',
+            street: '42, Barakhamba Road',
+            city: 'New Delhi',
+            state: 'Delhi',
+            pincode: '110001',
+          },
+          items: [{ product: products[3], quantity: 1 }],
+          deliveryPartner: 'BlueDart Express',
+          trackingNumber: 'BLU-776123001',
+        },
+      ];
+      setOrders(defaultMock);
+      setExpandedOrderId(defaultMock[0].id);
+    }
+
+    if (location.state?.newOrderPlaced) {
+      setShowOrderSuccessToast(true);
+    }
+  }, [location]);
 
   if (!user) {
     return (
@@ -37,7 +99,7 @@ const Orders = () => {
         <EmptyState
           icon={FiLock}
           title="Sign in to view your orders"
-          description="Please sign in to view your past purchases, shipment tracking timeline, and invoices."
+          description="Please sign in to track live 10-Min Shadowfax deliveries, view timeline stages, and print GST Tax Invoices."
           actionLabel="Sign In Now"
           onAction={() => navigate('/login')}
         />
@@ -45,168 +107,146 @@ const Orders = () => {
     );
   }
 
-  const mockOrders = [
-    {
-      id: 'ORD-9842',
-      date: 'July 21, 2026',
-      total: 458.0,
-      status: 'Delivered',
-      variant: 'success',
-      items: [
-        { product: products[0], quantity: 1 },
-        { product: products[2], quantity: 1 },
-      ],
-      timeline: [
-        { label: 'Order Placed', time: 'July 21, 10:14 AM', done: true },
-        { label: 'Processing & Quality Check', time: 'July 21, 02:30 PM', done: true },
-        { label: 'Shipped via Express Delivery', time: 'July 22, 08:00 AM', done: true },
-        { label: 'Delivered', time: 'July 23, 11:20 AM', done: true },
-      ],
-    },
-    {
-      id: 'ORD-8410',
-      date: 'July 15, 2026',
-      total: 179.0,
-      status: 'In Transit',
-      variant: 'info',
-      items: [{ product: products[3], quantity: 1 }],
-      timeline: [
-        { label: 'Order Placed', time: 'July 15, 04:20 PM', done: true },
-        { label: 'Processing & Quality Check', time: 'July 16, 09:00 AM', done: true },
-        { label: 'Shipped via Express Delivery', time: 'July 17, 11:45 AM', done: true },
-        { label: 'Estimated Delivery', time: 'July 24, 05:00 PM', done: false },
-      ],
-    },
-  ];
-
   return (
     <motion.div variants={fadeIn} initial="hidden" animate="visible" className="space-y-6">
       <Breadcrumb items={[{ label: 'Order History' }]} />
 
+      {/* Success Notification Banner */}
+      {showOrderSuccessToast && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-3xl bg-emerald-500 text-white font-bold text-xs flex items-center justify-between shadow-lg"
+        >
+          <div className="flex items-center gap-2">
+            <FiCheckCircle className="w-5 h-5" />
+            <span>🎉 Order placed successfully! Your 10-Min Express delivery rider is assigned.</span>
+          </div>
+          <button onClick={() => setShowOrderSuccessToast(false)} className="text-white text-xs underline">
+            Dismiss
+          </button>
+        </motion.div>
+      )}
+
       <div>
-        <span className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-          Purchases & Shipments
+        <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
+          PURCHASES & SHIPMENT TIMELINE
         </span>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight mt-1">
+        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight mt-1">
           My Order History
         </h1>
       </div>
 
       <div className="space-y-6">
-        {mockOrders.map((order) => {
+        {orders.map((order) => {
           const isExpanded = expandedOrderId === order.id;
           return (
             <div
               key={order.id}
-              className="bg-white dark:bg-dark-card border border-gray-200/80 dark:border-dark-border rounded-3xl overflow-hidden shadow-xs"
+              className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs transition-all"
             >
               {/* Order Bar Header */}
               <div
                 onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                className="p-5 md:p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+                className="p-5 md:p-6 flex flex-wrap items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary-50 dark:bg-primary-950/60 text-primary-600 rounded-2xl">
+                  <div className="p-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 rounded-2xl">
                     <FiPackage className="w-6 h-6" />
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-base text-gray-900 dark:text-gray-100">
+                      <h3 className="font-black text-base text-slate-900 dark:text-slate-100">
                         Order #{order.id}
                       </h3>
-                      <Badge variant={order.variant} showDot>
+                      <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">
                         {order.status}
-                      </Badge>
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Placed on {order.date} • {order.items.length} item(s)
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                      Placed on {formatDate(order.createdAt)} • {order.items.length} Item(s)
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <span className="text-lg font-black text-gray-900 dark:text-gray-100">
-                    ${order.total.toFixed(2)}
+                  <span className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    {formatCurrency(order.totalAmount)}
                   </span>
                   {isExpanded ? (
-                    <FiChevronUp className="w-5 h-5 text-gray-400" />
+                    <FiChevronUp className="w-5 h-5 text-slate-400" />
                   ) : (
-                    <FiChevronDown className="w-5 h-5 text-gray-400" />
+                    <FiChevronDown className="w-5 h-5 text-slate-400" />
                   )}
                 </div>
               </div>
 
-              {/* Expanded Order Content */}
+              {/* Expanded Order Details */}
               {isExpanded && (
-                <div className="p-6 md:p-8 border-t border-gray-100 dark:border-dark-border/60 bg-gray-50/30 dark:bg-dark-bg/30 space-y-6">
-                  {/* Order Timeline */}
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
-                      Shipment Progress Timeline
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {order.timeline.map((step, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-3.5 rounded-2xl border text-xs flex flex-col gap-1 ${
-                            step.done
-                              ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-300'
-                              : 'bg-gray-100/50 dark:bg-dark-card border-gray-200 dark:border-dark-border text-gray-400'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5 font-bold">
-                            {step.done ? (
-                              <FiCheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                            ) : (
-                              <FiClock className="w-4 h-4 text-gray-400 shrink-0" />
-                            )}
-                            <span>{step.label}</span>
-                          </div>
-                          <span className="text-[11px] opacity-75">{step.time}</span>
-                        </div>
-                      ))}
+                <div className="p-6 md:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 space-y-6">
+                  {/* Shipment Rider Details */}
+                  <div className="flex flex-wrap items-center justify-between p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 gap-4">
+                    <div className="flex items-center gap-3">
+                      <FiZap className="w-5 h-5 text-amber-500 fill-amber-500" />
+                      <div className="text-xs">
+                        <strong className="text-slate-900 dark:text-slate-100 font-black">
+                          Delivery Partner: {order.deliveryPartner || 'Shadowfax Rider'}
+                        </strong>
+                        <p className="text-slate-500">Tracking Waybill: {order.trackingNumber || 'SFX-908123984'}</p>
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => setSelectedTrackingOrder(order)}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5"
+                    >
+                      <FiTruck className="w-4 h-4" />
+                      <span>Live Timeline</span>
+                    </button>
                   </div>
 
-                  {/* Item Rows */}
-                  <div className="space-y-3 pt-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      Order Items
+                  {/* Items List */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                      Order Products ({order.items.length})
                     </h4>
-                    <div className="divide-y divide-gray-100 dark:divide-dark-border/60">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="py-3 flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={item.product?.image}
-                              alt={item.product?.name}
-                              className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-dark-border"
-                            />
-                            <div>
-                              <h5 className="font-bold text-gray-900 dark:text-gray-100">
-                                {item.product?.name}
-                              </h5>
-                              <p className="text-gray-500">Qty: {item.quantity}</p>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {order.items.map((item, idx) => {
+                        const p = item.product || item;
+                        return (
+                          <div key={idx} className="py-3 flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={p.image}
+                                alt={p.name}
+                                className="w-12 h-12 rounded-xl object-cover border border-slate-200"
+                              />
+                              <div>
+                                <h5 className="font-extrabold text-slate-900 dark:text-slate-100">
+                                  {p.name}
+                                </h5>
+                                <p className="text-slate-500 font-medium">Qty: {item.quantity || 1}</p>
+                              </div>
                             </div>
+                            <span className="font-black text-slate-900 dark:text-slate-100">
+                              {formatCurrency((p.price || 0) * (item.quantity || 1))}
+                            </span>
                           </div>
-                          <span className="font-bold text-gray-900 dark:text-gray-100">
-                            ${(item.product?.price * item.quantity).toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Actions Bar */}
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200/80 dark:border-dark-border">
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                     <Button
                       variant="outline"
                       size="sm"
                       leftIcon={<FiFileText className="w-4 h-4" />}
                       onClick={() => setSelectedInvoice(order)}
                     >
-                      View Invoice
+                      Print GST Tax Invoice
                     </Button>
                   </div>
                 </div>
@@ -216,42 +256,21 @@ const Orders = () => {
         })}
       </div>
 
-      {/* Invoice Card Modal */}
-      {selectedInvoice && (
-        <Modal
-          isOpen={!!selectedInvoice}
-          onClose={() => setSelectedInvoice(null)}
-          title={`Invoice #${selectedInvoice.id}`}
-          size="md"
-        >
-          <div className="space-y-4 text-xs">
-            <div className="flex justify-between pb-3 border-b border-gray-100 dark:border-dark-border">
-              <div>
-                <strong className="text-gray-900 dark:text-gray-100 text-sm">ShopSphere Inc.</strong>
-                <p className="text-gray-500">Invoice Date: {selectedInvoice.date}</p>
-              </div>
-              <Badge variant="success">Paid in Full</Badge>
-            </div>
+      {/* Invoice Modal Trigger */}
+      <InvoiceModal
+        isOpen={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+        order={selectedInvoice}
+      />
 
-            <div className="space-y-2">
-              {selectedInvoice.items.map((it, i) => (
-                <div key={i} className="flex justify-between">
-                  <span>{it.product?.name} x{it.quantity}</span>
-                  <span className="font-bold">${(it.product?.price * it.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-gray-100 dark:border-dark-border flex justify-between font-extrabold text-sm">
-              <span>Total Amount Paid</span>
-              <span className="text-primary-600">${selectedInvoice.total.toFixed(2)}</span>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Order Tracking Modal Trigger */}
+      <OrderTrackingModal
+        isOpen={!!selectedTrackingOrder}
+        onClose={() => setSelectedTrackingOrder(null)}
+        order={selectedTrackingOrder}
+      />
     </motion.div>
   );
 };
 
 export default Orders;
-

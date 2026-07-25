@@ -1,142 +1,156 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTag, FiTruck, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowRight, FiShield, FiTag, FiCheck, FiInfo } from 'react-icons/fi';
 import Button from '../common/Button';
+import { formatCurrency, calculateGST } from '../../utils/formatters';
 
 /**
- * CartSummary Component
- * Order breakdown panel with coupon discount calculator, shipping estimate, tax, and checkout trigger.
+ * CartSummary Component - NOVACART
+ * Order calculation in ₹, GST tax breakdown, Platform Fee, Indian Coupon Codes.
  */
-const CartSummary = ({ subtotal = 0 }) => {
+const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
   const navigate = useNavigate();
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState(0); // percentage
-  const [couponError, setCouponError] = useState('');
-  const [couponSuccess, setCouponSuccess] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [appliedCode, setAppliedCode] = useState('');
+  const [promoError, setPromoError] = useState('');
 
-  const freeShippingThreshold = 150;
-  const shippingCost = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 15;
-  const taxCost = Number((subtotal * 0.08).toFixed(2));
-  const discountAmount = Number(((subtotal * appliedDiscount) / 100).toFixed(2));
+  const validPromos = {
+    NOVACART100: 500,
+    FESTIVE500: 500,
+    INDIA100: 200,
+    GROCERY10: 100,
+  };
 
-  const grandTotal = Math.max(0, subtotal - discountAmount + shippingCost + taxCost).toFixed(2);
-
-  const handleApplyCoupon = (e) => {
+  const handleApplyPromo = (e) => {
     e.preventDefault();
-    setCouponError('');
-    setCouponSuccess('');
+    setPromoError('');
+    const code = promoCode.trim().toUpperCase();
 
-    if (couponCode.toUpperCase() === 'SHOPSPHERE10' || couponCode.toUpperCase() === 'PROMO10') {
-      setAppliedDiscount(10);
-      setCouponSuccess('10% discount coupon applied successfully!');
-    } else if (couponCode.trim() !== '') {
-      setCouponError('Invalid coupon code. Try SHOPSPHERE10');
+    if (validPromos[code]) {
+      setAppliedDiscount(validPromos[code]);
+      setAppliedCode(code);
+      setPromoCode('');
+    } else {
+      setPromoError('Invalid coupon code. Try NOVACART100 or FESTIVE500');
     }
   };
 
-  const freeShippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+  const gstBreakdown = calculateGST(subtotal);
+  const deliveryFee = subtotal >= 499 || subtotal === 0 ? 0 : 49;
+  const platformFee = items.length > 0 ? 7 : 0;
+  const total = Math.max(0, subtotal - appliedDiscount + deliveryFee + platformFee);
 
   return (
-    <div className="flex flex-col gap-6 p-6 bg-white dark:bg-dark-card border border-gray-200/80 dark:border-dark-border rounded-3xl shadow-sm">
-      <h3 className="font-extrabold text-xl text-gray-900 dark:text-gray-100">Order Summary</h3>
+    <div className="p-6 md:p-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm space-y-6 sticky top-24">
+      <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
+        Order Financial Summary
+      </h3>
 
-      {/* Free Shipping Progress Indicator */}
-      <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-gray-50 dark:bg-dark-bg border border-gray-100 dark:border-dark-border/60">
-        <div className="flex items-center justify-between text-xs font-semibold">
-          <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-            <FiTruck className="w-4 h-4 text-primary-500" />
-            {subtotal >= freeShippingThreshold ? (
-              <strong className="text-emerald-600 dark:text-emerald-400">
-                Congratulations! You unlocked Free Shipping
-              </strong>
-            ) : (
-              <span>Add ${(freeShippingThreshold - subtotal).toFixed(2)} for Free Shipping</span>
-            )}
-          </span>
-        </div>
-
-        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary-600 rounded-full transition-all duration-300"
-            style={{ width: `${freeShippingProgress}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Breakdown Rows */}
-      <div className="flex flex-col gap-3 text-sm border-b border-gray-100 dark:border-dark-border/60 pb-4">
-        <div className="flex justify-between text-gray-600 dark:text-gray-400">
-          <span>Subtotal</span>
-          <span className="font-bold text-gray-900 dark:text-gray-100">${subtotal.toFixed(2)}</span>
-        </div>
-
-        {appliedDiscount > 0 && (
-          <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
-            <span>Promo Discount ({appliedDiscount}%)</span>
-            <span>-${discountAmount.toFixed(2)}</span>
-          </div>
-        )}
-
-        <div className="flex justify-between text-gray-600 dark:text-gray-400">
-          <span>Shipping Estimate</span>
-          <span className="font-bold text-gray-900 dark:text-gray-100">
-            {shippingCost === 0 ? <strong className="text-emerald-500">FREE</strong> : `$${shippingCost}`}
-          </span>
-        </div>
-
-        <div className="flex justify-between text-gray-600 dark:text-gray-400">
-          <span>Estimated Tax (8%)</span>
-          <span className="font-bold text-gray-900 dark:text-gray-100">${taxCost}</span>
-        </div>
-      </div>
-
-      {/* Coupon Code Section */}
-      <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
+      {/* Promo Code Form */}
+      <form onSubmit={handleApplyPromo} className="space-y-2">
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <FiTag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Promo code (e.g. SHOPSPHERE10)"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-300 dark:border-dark-border bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase font-semibold"
+              placeholder="Coupon Code (e.g. NOVACART100)"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              className="w-full px-3.5 py-2.5 text-xs font-bold font-mono rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 uppercase"
             />
+            <FiTag className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           </div>
-          <Button type="submit" variant="secondary" size="sm" className="shrink-0">
+          <button
+            type="submit"
+            className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition-colors"
+          >
             Apply
-          </Button>
+          </button>
         </div>
 
-        {couponError && <span className="text-[11px] font-semibold text-red-500">{couponError}</span>}
-        {couponSuccess && (
-          <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
-            <FiCheckCircle className="w-3 h-3" />
-            {couponSuccess}
-          </span>
+        {promoError && (
+          <p className="text-[11px] font-bold text-rose-500">{promoError}</p>
+        )}
+
+        {appliedCode && (
+          <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-xs font-bold text-emerald-600 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <FiCheck className="w-4 h-4" />
+              <span>Coupon {appliedCode} Applied! (-{formatCurrency(appliedDiscount)})</span>
+            </span>
+            <button
+              onClick={() => {
+                setAppliedDiscount(0);
+                setAppliedCode('');
+              }}
+              className="text-[10px] text-rose-500 hover:underline"
+            >
+              Remove
+            </button>
+          </div>
         )}
       </form>
 
-      {/* Grand Total */}
-      <div className="flex justify-between items-baseline pt-2">
-        <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">Total</span>
-        <span className="text-2xl font-black text-primary-600 dark:text-primary-400">
-          ${grandTotal}
-        </span>
+      {/* Summary Rows */}
+      <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
+        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
+          <span>Items Subtotal</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(subtotal)}</span>
+        </div>
+
+        {appliedDiscount > 0 && (
+          <div className="flex items-center justify-between text-emerald-600 font-bold">
+            <span>Festive Coupon Savings</span>
+            <span>-{formatCurrency(appliedDiscount)}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
+          <span>Platform & Tech Fee</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(platformFee)}</span>
+        </div>
+
+        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
+          <span>NovaMart Express Shipping</span>
+          {deliveryFee === 0 ? (
+            <span className="font-extrabold text-emerald-600">FREE</span>
+          ) : (
+            <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(deliveryFee)}</span>
+          )}
+        </div>
+
+        {/* GST Tax Breakdown Box */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1 text-[11px]">
+          <div className="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+            <span>Includes 18% GST (CGST + SGST):</span>
+            <span className="text-indigo-600 font-mono font-bold">{formatCurrency(gstBreakdown.totalGst)}</span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Input Tax Credit ready invoice available on checkout.
+          </p>
+        </div>
+
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-baseline justify-between text-base font-black text-slate-900 dark:text-slate-100">
+          <span>Grand Total</span>
+          <span className="text-xl text-indigo-600 dark:text-indigo-400">{formatCurrency(total)}</span>
+        </div>
       </div>
 
-      {/* Checkout CTA */}
       <Button
-        size="lg"
         fullWidth
+        size="lg"
         rightIcon={<FiArrowRight className="w-5 h-5" />}
-        onClick={() => navigate('/checkout')}
+        onClick={onCheckout || (() => navigate('/checkout'))}
       >
-        Proceed to Checkout
+        Proceed to Secure Checkout
       </Button>
+
+      <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 font-bold">
+        <FiShield className="w-3.5 h-3.5 text-emerald-500" />
+        <span>Instant UPI Refunds & 100% Genuine Brands</span>
+      </div>
     </div>
   );
 };
 
 export default CartSummary;
-

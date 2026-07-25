@@ -1,67 +1,28 @@
-import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { FiChevronLeft, FiChevronRight, FiTrendingUp } from 'react-icons/fi';
 import ProductCard from '../product/ProductCard';
 import { products } from '../../data/products';
 
 /**
  * BestSellersSection Component
- * Horizontal scrolling showcase section for top-performing best seller products.
  */
 const BestSellersSection = () => {
-  const scrollRef = useRef(null);
-
-  const bestSellerProducts = products.filter((p) => p.isBestSeller || p.rating >= 4.7);
-
-  const handleScroll = (direction) => {
-    if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -340 : 340;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
+  const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 4);
 
   return (
-    <section className="py-12 md:py-16 relative">
-      <div className="flex items-center justify-between mb-8">
+    <section className="py-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
-            <FiTrendingUp className="w-4 h-4" />
-            <span>Customer Favorites</span>
-          </div>
-          <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight mt-1">
-            Best Sellers
+          <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            MOST LOVED BY INDIAN CUSTOMERS
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mt-1">
+            Marketplace Best Sellers
           </h2>
-        </div>
-
-        {/* Scroll Control Arrows */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleScroll('left')}
-            aria-label="Scroll left"
-            className="p-2.5 rounded-full border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-xs"
-          >
-            <FiChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          </button>
-          <button
-            onClick={() => handleScroll('right')}
-            aria-label="Scroll right"
-            className="p-2.5 rounded-full border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-xs"
-          >
-            <FiChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          </button>
         </div>
       </div>
 
-      {/* Horizontal Scroll Track */}
-      <div
-        ref={scrollRef}
-        className="flex gap-6 overflow-x-auto scrollbar-none pb-4 pt-1 snap-x snap-mandatory"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {bestSellerProducts.map((product) => (
-          <div key={product._id} className="min-w-[280px] sm:min-w-[320px] max-w-[320px] snap-start shrink-0">
-            <ProductCard product={product} />
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {bestSellers.map((product) => (
+          <ProductCard key={product._id} product={product} />
         ))}
       </div>
     </section>

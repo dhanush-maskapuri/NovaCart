@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiMail, FiCheck, FiShield } from 'react-icons/fi';
-import Button from '../common/Button';
+import { FiMail, FiCheck } from 'react-icons/fi';
 
 /**
  * NewsletterSection Component
- * Modern SaaS email subscription card with anti-spam guarantee and submission feedback.
  */
 const NewsletterSection = () => {
   const [email, setEmail] = useState('');
@@ -13,63 +11,56 @@ const NewsletterSection = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (email) {
+    if (email.trim()) {
       setIsSubscribed(true);
+      setEmail('');
     }
   };
 
   return (
-    <section className="py-12 md:py-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.4 }}
-        className="p-8 md:p-14 rounded-3xl bg-white dark:bg-dark-card border border-gray-200/80 dark:border-dark-border shadow-lg text-center max-w-4xl mx-auto flex flex-col items-center gap-6"
-      >
-        <div className="p-3.5 bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 rounded-full">
-          <FiMail className="w-8 h-8" />
-        </div>
+    <section className="py-12">
+      <div className="relative rounded-3xl p-8 md:p-12 bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 text-white shadow-2xl overflow-hidden">
+        <div className="relative z-10 max-w-xl mx-auto text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto text-white">
+            <FiMail className="w-6 h-6" />
+          </div>
 
-        <div>
-          <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
-            Stay ahead of the curve
+          <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight">
+            Subscribe for Festive Coupons & 10-Min Drops
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-lg mx-auto">
-            Subscribe to receive exclusive drop announcements, AI shopping insights, and VIP discounts directly to your inbox.
+          <p className="text-xs md:text-sm text-indigo-100 leading-relaxed">
+            Get exclusive ₹500 discount vouchers, early access to Great Indian Festival deals, and new NovaMart product alerts.
           </p>
-        </div>
 
-        {isSubscribed ? (
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-6 py-3 rounded-2xl border border-emerald-200 dark:border-emerald-900"
-          >
-            <FiCheck className="w-5 h-5" />
-            <span>Thank you for subscribing! Check your inbox for your welcome gift.</span>
-          </motion.div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-dark-border bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <Button type="submit" size="md" className="w-full sm:w-auto shrink-0">
-              Subscribe
-            </Button>
-          </form>
-        )}
-
-        <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-          <FiShield className="w-3.5 h-3.5" />
-          <span>No spam guaranteed. Unsubscribe anytime with 1-click.</span>
+          {isSubscribed ? (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="p-4 rounded-2xl bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2"
+            >
+              <FiCheck className="w-5 h-5" />
+              <span>Thank you! Your ₹500 festive coupon code is: FESTIVE500</span>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 pt-2">
+              <input
+                type="email"
+                required
+                placeholder="Enter your email address..."
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 text-xs rounded-2xl border border-white/20 bg-white/10 text-white placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium"
+              />
+              <button
+                type="submit"
+                className="px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs shadow-lg transition-all"
+              >
+                Claim Coupon
+              </button>
+            </form>
+          )}
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };

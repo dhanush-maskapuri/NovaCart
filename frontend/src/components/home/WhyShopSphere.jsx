@@ -39,7 +39,7 @@ const WhyShopSphere = () => {
           WHY CUSTOMERS TRUST US
         </span>
         <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mt-1">
-          Built for the Modern Indian Shopper
+          Why 1 Crore+ Shoppers Choose NovaCart
         </h2>
       </div>
 

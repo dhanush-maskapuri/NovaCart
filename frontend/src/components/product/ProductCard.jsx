@@ -161,7 +161,7 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
             </div>
 
             <Link to={`/product/${_id}`}>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
                 {name}
               </h3>
             </Link>

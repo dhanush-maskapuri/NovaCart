@@ -1,7 +1,8 @@
 {
-  "name": "shopsphere-backend",
+  "name": "novacart-backend",
+  "private": true,
   "version": "1.0.0",
-  "description": "Backend API for ShopSphere E-Commerce Platform",
+  "description": "Backend API for NovaCart E-Commerce Platform",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

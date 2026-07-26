@@ -16,7 +16,7 @@ const ServicesSection = () => {
             HYPERLOCAL & SPECIALTY MARKETPLACES
           </span>
           <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mt-1">
-            Explore ShopSphere Indian Hubs
+            Explore NovaCart Specialty Hubs
           </h2>
         </div>
         <p className="text-xs md:text-sm text-slate-500 max-w-md">

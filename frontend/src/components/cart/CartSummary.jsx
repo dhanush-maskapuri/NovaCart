@@ -39,13 +39,20 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
   const gstBreakdown = calculateGST(subtotal);
   const deliveryFee = subtotal >= 499 || subtotal === 0 ? 0 : 49;
   const platformFee = items.length > 0 ? 7 : 0;
-  const total = Math.max(0, subtotal - appliedDiscount + deliveryFee + platformFee);
+  const packingFee = items.length > 0 ? 15 : 0;
+  const total = Math.max(0, subtotal - appliedDiscount + deliveryFee + platformFee + packingFee);
 
   return (
     <div className="p-6 md:p-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm space-y-6 sticky top-24">
       <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
         Order Financial Summary
       </h3>
+
+      {/* Estimated Delivery Banner */}
+      <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
+        <span>⚡ Estimated Delivery:</span>
+        <span className="font-black">10-Min Express (NovaMart) / Tomorrow</span>
+      </div>
 
       {/* Promo Code Form */}
       <form onSubmit={handleApplyPromo} className="space-y-2">
@@ -62,7 +69,7 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
           </div>
           <button
             type="submit"
-            className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition-colors"
+            className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-colors"
           >
             Apply
           </button>
@@ -111,7 +118,12 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
         </div>
 
         <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
-          <span>NovaMart Express Shipping</span>
+          <span>Safety Packing & Handling Fee</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(packingFee)}</span>
+        </div>
+
+        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
+          <span>Delivery Charge</span>
           {deliveryFee === 0 ? (
             <span className="font-extrabold text-emerald-600">FREE</span>
           ) : (
@@ -123,7 +135,7 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
         <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1 text-[11px]">
           <div className="flex justify-between font-bold text-slate-700 dark:text-slate-300">
             <span>Includes 18% GST (CGST + SGST):</span>
-            <span className="text-indigo-600 font-mono font-bold">{formatCurrency(gstBreakdown.totalGst)}</span>
+            <span className="text-blue-600 font-mono font-bold">{formatCurrency(gstBreakdown.totalGst)}</span>
           </div>
           <p className="text-[10px] text-slate-400">
             Input Tax Credit ready invoice available on checkout.
@@ -132,7 +144,7 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
 
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-baseline justify-between text-base font-black text-slate-900 dark:text-slate-100">
           <span>Grand Total</span>
-          <span className="text-xl text-indigo-600 dark:text-indigo-400">{formatCurrency(total)}</span>
+          <span className="text-xl text-blue-600 dark:text-blue-400">{formatCurrency(total)}</span>
         </div>
       </div>
 

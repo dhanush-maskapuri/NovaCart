@@ -65,8 +65,8 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
             {/* Header / Brand */}
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-indigo-600">
-                  ShopSphere India Technologies Pvt. Ltd.
+                <h1 className="text-2xl font-black tracking-tight text-blue-600">
+                  NovaCart India Technologies Pvt. Ltd.
                 </h1>
                 <p className="text-xs text-slate-500 mt-1">
                   Embassy Tech Village, Outer Ring Road, Devarabeesanahalli, Bengaluru, Karnataka 560103
@@ -190,10 +190,10 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
             {/* Authorised Signatory */}
             <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-end text-xs">
               <div>
-                <p className="font-bold text-slate-400 uppercase text-[10px]">Thank you for shopping on ShopSphere India!</p>
+                <p className="font-bold text-slate-400 uppercase text-[10px]">Thank you for shopping on NovaCart India!</p>
               </div>
               <div className="text-right">
-                <div className="font-serif italic font-bold text-slate-800 dark:text-slate-200 text-sm">ShopSphere India Pvt Ltd</div>
+                <div className="font-serif italic font-bold text-slate-800 dark:text-slate-200 text-sm">NovaCart India Pvt Ltd</div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase">Authorised Signatory</span>
               </div>
             </div>

@@ -40,7 +40,7 @@ const AdminLayout = () => {
             <div>
               <h2 className="font-extrabold text-sm text-white">Merchant Admin</h2>
               <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase">
-                ShopSphere India
+                NovaCart India
               </span>
             </div>
           </div>

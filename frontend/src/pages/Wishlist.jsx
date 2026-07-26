@@ -1,4 +1,4 @@
-import { useNavigate } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiHeart, FiShoppingBag, FiTrash2, FiTrendingDown } from 'react-icons/fi';
 import EmptyState from '../components/common/EmptyState';

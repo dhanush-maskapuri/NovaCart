@@ -4,13 +4,34 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
       colors: {
+        brand: {
+          blue: '#2563EB',
+          purple: '#7C3AED',
+          amber: '#F59E0B',
+          emerald: '#10B981',
+          bg: '#F8FAFC',
+        },
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+        },
+        secondary: {
+          50: '#f5f3ff',
+          100: '#ede9fe',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+        },
+        accent: {
+          500: '#f59e0b',
+          600: '#d97706',
         },
         dark: {
           bg: '#0f172a',

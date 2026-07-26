@@ -95,6 +95,7 @@ export const PAYMENT_METHODS = [
   { id: 'upi', label: 'UPI (GPay / PhonePe / Paytm / BHIM VPA)', icon: '📱' },
   { id: 'card', label: 'Credit / Debit Card (RuPay / Visa / Mastercard)', icon: '💳' },
   { id: 'netbanking', label: 'Net Banking (HDFC, ICICI, SBI, Axis)', icon: '🏦' },
+  { id: 'wallet', label: 'Digital Wallet (Paytm / Mobikwik / Amazon Pay)', icon: '👛' },
   { id: 'cod', label: 'Cash on Delivery (COD)', icon: '💵' },
 ];
 

@@ -15,10 +15,10 @@ import {
   FiBell,
   FiMic,
   FiGrid,
-  FiCpu,
+  FiCheck,
+  FiZap as FiSparkles,
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
-import SearchModal from '../search/SearchModal';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,18 +26,21 @@ import { categories } from '../../data/categories';
 import { APP_NAME, APP_TAGLINE } from '../../utils/constants';
 
 /**
- * Navbar Component - NOVACART ("India's Smart Marketplace")
- * Royal Blue & Indigo Glassmorphism Header, Category Mega Menu, Voice Search Modal Trigger,
- * Notifications Popover, Delivery Pincode Drawer, & Badge Counters.
+ * Navbar Component - NovaCart ("India's Smart Marketplace")
+ * Amazon-Style Search Bar (Category Dropdown + Search Input + Voice Mic + Search Button),
+ * Sticky Header with Scroll Shadow, Pincode Selector, Notifications, Wishlist, Cart, Profile.
  */
 const Navbar = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const [isPincodeModalOpen, setIsPincodeModalOpen] = useState(false);
-  const [selectedPincode, setSelectedPincode] = useState('110001 - New Delhi');
+  const [selectedPincode, setSelectedPincode] = useState('400001 - Mumbai');
   const [tempPincode, setTempPincode] = useState('');
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,216 +50,234 @@ const Navbar = () => {
   const { user } = useAuth();
 
   const totalCartItems = cart.reduce((total, item) => total + (item.quantity || 1), 0);
+  const totalCartPrice = cart.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
   const totalWishlistItems = wishlist.length;
 
   useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     setIsMobileMenuOpen(false);
-    setIsSearchOpen(false);
-    setIsMegaMenuOpen(false);
     setIsNotificationsOpen(false);
+    setIsMegaMenuOpen(false);
   }, [location.pathname]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim() && selectedCategory === 'All') return;
+    const catQuery = selectedCategory !== 'All' ? `&category=${encodeURIComponent(selectedCategory.toLowerCase())}` : '';
+    navigate(`/shop?search=${encodeURIComponent(searchQuery)}${catQuery}`);
+  };
+
+  const handleVoiceSearch = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchQuery(transcript);
+        setIsListening(false);
+        navigate(`/shop?search=${encodeURIComponent(transcript)}`);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognition.start();
+    } else {
+      // Fallback voice simulation for browsers without WebSpeech API
+      setIsListening(true);
+      setTimeout(() => {
+        const sampleQueries = ['iPhone 15 Pro', 'Amul Butter', 'Teakwood Sofa', 'boAt Earbuds'];
+        const randomQuery = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
+        setSearchQuery(randomQuery);
+        setIsListening(false);
+        navigate(`/shop?search=${encodeURIComponent(randomQuery)}`);
+      }, 2000);
+    }
+  };
 
   const handlePincodeSubmit = (e) => {
     e.preventDefault();
     if (tempPincode.trim().length === 6) {
-      setSelectedPincode(`${tempPincode} - Verified Express Zone`);
+      setSelectedPincode(`${tempPincode} - Verified Delivery`);
       setIsPincodeModalOpen(false);
       setTempPincode('');
     }
   };
 
   const notifications = [
-    { title: '⚡ Festive Sale Live', desc: 'Up to 70% Off on Mobiles & NovaMart 10-Min Groceries', time: 'Just Now' },
-    { title: '📦 Order #ORD-98421 Update', desc: 'Rider is out for delivery in your area', time: '10 Mins Ago' },
+    { title: '⚡ Great Indian Festive Sale Live', desc: 'Up to 70% Off on Electronics & NovaMart 10-Min Groceries', time: 'Just Now' },
+    { title: '📦 Order #ORD-98421 Dispatched', desc: 'Delivery partner is en-route to your location', time: '12 Mins Ago' },
+    { title: '🏷️ Price Drop Alert', desc: 'Samsung S24 Ultra price decreased by ₹10,000!', time: '1 Hour Ago' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-effect border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-300">
-      {/* Top Banner Announcement Ticker */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 text-white text-[11px] font-bold py-1.5 px-4 flex items-center justify-between">
+    <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+      isScrolled ? 'bg-white/95 dark:bg-slate-950/95 backdrop-blur-md shadow-lg shadow-slate-900/5 border-b border-slate-200/80 dark:border-slate-800/80' : 'glass-effect border-b border-slate-200/60 dark:border-slate-800'
+    }`}>
+      {/* Top Banner Ticker */}
+      <div className="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 text-white text-[11px] font-bold py-1.5 px-4 shadow-inner">
         <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[10px] uppercase font-black flex items-center gap-1">
-              <FiZap className="w-3 h-3 fill-slate-950" /> FESTIVE SALE
+          <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+            <span className="bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full text-[10px] uppercase font-black flex items-center gap-1 shrink-0">
+              <FiZap className="w-3 h-3 fill-slate-950" /> FESTIVE DHAMAKA
             </span>
-            <span className="hidden sm:inline">
-              ⚡ Great Indian Sale — Get Up to 70% OFF + 10-Min Instant Grocery Delivery!
+            <span className="truncate">
+              ⚡ <strong>NovaCart Great Indian Festival</strong> — Extra 10% Instant Discount on HDFC & ICICI Cards + 10-Min Express Grocery Delivery!
             </span>
-            <span className="sm:hidden">⚡ Great Indian Sale — Up to 70% OFF</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex items-center gap-4 text-[11px] shrink-0">
             <button
               onClick={() => setIsPincodeModalOpen(true)}
               className="flex items-center gap-1 hover:underline text-amber-200 font-semibold"
             >
-              <FiMapPin className="w-3.5 h-3.5" />
-              <span>{selectedPincode}</span>
+              <FiMapPin className="w-3.5 h-3.5 text-amber-300" />
+              <span>Deliver to: <strong>{selectedPincode}</strong></span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Navigation Bar */}
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      {/* Main Bar */}
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3 lg:gap-6">
         {/* Brand Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight shrink-0 group"
+          className="flex items-center gap-2.5 shrink-0 group"
         >
           <motion.div
-            whileHover={{ rotate: 12, scale: 1.1 }}
+            whileHover={{ rotate: 12, scale: 1.08 }}
             transition={{ type: 'spring', stiffness: 300 }}
-            className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20"
+            className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25"
           >
             <FiShoppingBag className="w-5 h-5" />
           </motion.div>
           <div className="flex flex-col">
-            <span className="text-xl font-black tracking-tight text-gradient leading-none">
+            <span className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-300 leading-none">
               {APP_NAME}
             </span>
-            <span className="text-[9px] font-bold tracking-widest text-slate-500 dark:text-slate-400 uppercase leading-tight">
-              {APP_TAGLINE}
+            <span className="text-[9px] font-extrabold tracking-widest text-amber-600 dark:text-amber-400 uppercase leading-tight flex items-center gap-1">
+              <span>{APP_TAGLINE}</span>
             </span>
           </div>
         </Link>
 
-        {/* Desktop Category Navigation & Mega Menu Trigger */}
-        <nav className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-800 relative">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-indigo-600'
-              }`
-            }
-          >
-            Home
-          </NavLink>
-
-          <NavLink
-            to="/shop"
-            className={({ isActive }) =>
-              `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-indigo-600'
-              }`
-            }
-          >
-            All Products
-          </NavLink>
-
-          {/* Mega Menu Category Hover */}
-          <div
-            onMouseEnter={() => setIsMegaMenuOpen(true)}
-            onMouseLeave={() => setIsMegaMenuOpen(false)}
-            className="relative"
-          >
-            <button className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 flex items-center gap-1">
-              <span>Categories ({categories.length})</span>
-              <FiChevronDown className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Mega Menu Dropdown */}
-            <AnimatePresence>
-              {isMegaMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full left-0 w-[640px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 z-50 grid grid-cols-3 gap-4"
-                >
-                  {categories.slice(0, 15).map((cat) => (
-                    <Link
-                      key={cat.id}
-                      to={`/shop?category=${cat.slug}`}
-                      className="p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3"
-                    >
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-                        {cat.name[0]}
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-extrabold text-slate-900 dark:text-slate-100">
-                          {cat.name}
-                        </h5>
-                        <span className="text-[10px] text-slate-400">{cat.count}+ items</span>
-                      </div>
-                    </Link>
-                  ))}
-                  <div className="col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-bold">
-                    <span className="text-slate-400">Explore 25+ categories</span>
-                    <Link to="/shop" className="text-indigo-600 hover:underline">
-                      View All Catalog →
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* Amazon-Style Rounded Search Bar */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="hidden md:flex items-center flex-1 max-w-2xl h-11 bg-slate-100 dark:bg-slate-900 border-2 border-blue-600/30 focus-within:border-blue-600 rounded-full overflow-hidden shadow-sm transition-all"
+        >
+          {/* Category Dropdown */}
+          <div className="relative shrink-0 border-r border-slate-200 dark:border-slate-800">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-11 pl-3 pr-7 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 appearance-none focus:outline-none cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              <option value="mobiles">Mobiles</option>
+              <option value="laptops">Laptops</option>
+              <option value="groceries">NovaMart Groceries</option>
+              <option value="fashion">Fashion</option>
+              <option value="beauty">Beauty & Skincare</option>
+              <option value="furniture">Furniture</option>
+              <option value="tv">TV & Appliances</option>
+            </select>
+            <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
 
+          {/* Search Input */}
+          <div className="relative flex-1 flex items-center px-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search 40 Lakh+ products, brands, groceries..."
+              className="w-full text-xs font-medium text-slate-900 dark:text-slate-100 bg-transparent placeholder-slate-400 focus:outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <FiX className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Microphone Icon */}
+          <button
+            type="button"
+            onClick={handleVoiceSearch}
+            title="Voice Search"
+            className={`p-2 text-slate-500 hover:text-blue-600 transition-colors ${isListening ? 'animate-pulse text-red-500' : ''}`}
+          >
+            <FiMic className="w-4 h-4" />
+          </button>
+
+          {/* Search Button */}
+          <button
+            type="submit"
+            className="h-11 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold flex items-center justify-center transition-colors shrink-0"
+          >
+            <FiSearch className="w-4 h-4" />
+          </button>
+        </form>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* NovaMart Quick Pill */}
           <NavLink
             to="/shop?category=groceries"
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-1"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-black hover:scale-105 transition-all shadow-xs"
           >
-            ⚡ NovaMart 10-Min
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span>NovaMart 10-Min</span>
           </NavLink>
 
-          <NavLink
-            to="/ai-assistant"
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 flex items-center gap-1"
-          >
-            <FiCpu className="w-3.5 h-3.5" />
-            <span>AI Assistant</span>
-          </NavLink>
-        </nav>
-
-        {/* Quick Search Input Trigger */}
-        <div className="hidden md:flex flex-1 max-w-sm relative">
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="w-full text-left pl-9 pr-8 py-2 text-xs rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-900/60 text-slate-400 font-medium transition-all flex items-center justify-between"
-          >
-            <span>Search 40+ Lakh products or Voice...</span>
-            <FiMic className="w-4 h-4 text-indigo-500" />
-          </button>
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-        </div>
-
-        {/* Action Icons */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Notifications Popover */}
+          {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               title="Notifications"
-              className="p-2.5 rounded-2xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 relative"
+              className="p-2.5 rounded-2xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 relative transition-colors"
             >
               <FiBell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 rounded-full" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
             </button>
 
             <AnimatePresence>
               {isNotificationsOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 z-50 space-y-3"
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-slate-100">
-                    <span>Notifications</span>
-                    <span className="text-indigo-600 text-[10px]">Mark as read</span>
+                    <span className="flex items-center gap-1.5">
+                      <FiBell className="text-blue-600" /> Notifications
+                    </span>
+                    <span className="text-blue-600 text-[10px] cursor-pointer hover:underline">Mark read</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
                     {notifications.map((n, idx) => (
-                      <div key={idx} className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs space-y-1">
-                        <h5 className="font-bold text-slate-900 dark:text-slate-100">{n.title}</h5>
-                        <p className="text-[11px] text-slate-500">{n.desc}</p>
-                        <span className="text-[9px] text-slate-400 block">{n.time}</span>
+                      <div key={idx} className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs space-y-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <h5 className="font-extrabold text-slate-900 dark:text-slate-100">{n.title}</h5>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400">{n.desc}</p>
+                        <span className="text-[9px] text-slate-400 block font-semibold">{n.time}</span>
                       </div>
                     ))}
                   </div>
@@ -287,36 +308,40 @@ const Navbar = () => {
           <Link
             to="/cart"
             title="Cart"
-            className="p-2.5 relative rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
+            className="p-2 sm:px-3 sm:py-2 relative rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 flex items-center gap-2 transition-colors border border-blue-200/60 dark:border-blue-800/60"
           >
-            <FiShoppingCart className="w-5 h-5" />
-            {totalCartItems > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-1 right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs"
-              >
-                {totalCartItems}
-              </motion.span>
-            )}
+            <div className="relative">
+              <FiShoppingCart className="w-5 h-5" />
+              {totalCartItems > 0 && (
+                <span className="absolute -top-2 -right-2 w-4 h-4 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs">
+                  {totalCartItems}
+                </span>
+              )}
+            </div>
+            <div className="hidden xl:flex flex-col text-left leading-tight">
+              <span className="text-[9px] uppercase font-extrabold text-slate-400">Total</span>
+              <span className="text-xs font-black text-blue-700 dark:text-blue-300">
+                ₹{totalCartPrice.toLocaleString('en-IN')}
+              </span>
+            </div>
           </Link>
 
           <ThemeToggle />
 
-          {/* Account */}
+          {/* User Profile */}
           {user ? (
             <div className="flex items-center gap-2">
               <Link
                 to="/profile"
-                className="hidden sm:flex items-center gap-2 text-xs font-bold px-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors"
+                className="hidden sm:flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors"
               >
-                <FiUser className="w-4 h-4 text-indigo-600" />
-                <span className="truncate max-w-[90px]">{user.name || 'Profile'}</span>
+                <FiUser className="w-4 h-4 text-blue-600" />
+                <span className="truncate max-w-[80px]">{user.name || 'Profile'}</span>
               </Link>
               <Link
                 to="/admin"
-                title="Admin Dashboard"
-                className="p-2 rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-bold"
+                title="Admin Suite"
+                className="p-2 rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-bold hover:scale-105 transition-transform"
               >
                 <FiGrid className="w-4 h-4" />
               </Link>
@@ -324,27 +349,61 @@ const Navbar = () => {
           ) : (
             <Link
               to="/login"
-              className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition-all"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all"
             >
               <FiUser className="w-4 h-4" />
               <span>Login</span>
             </Link>
           )}
 
-          {/* Mobile Drawer Hamburger */}
+          {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-2xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="md:hidden p-2 rounded-2xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             {isMobileMenuOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Voice & Instant Search Modal */}
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {/* Mobile Search Bar Row */}
+      <div className="md:hidden px-4 pb-3">
+        <form onSubmit={handleSearchSubmit} className="flex items-center h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-3 gap-2">
+          <FiSearch className="w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products & 10-min groceries..."
+            className="w-full text-xs font-medium bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
+          />
+          <button type="button" onClick={handleVoiceSearch} className="text-slate-400">
+            <FiMic className="w-4 h-4 text-blue-600" />
+          </button>
+        </form>
+      </div>
 
-      {/* Pincode Location Modal */}
+      {/* Voice Listening Overlay */}
+      <AnimatePresence>
+        {isListening && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white"
+          >
+            <div className="w-20 h-20 rounded-full bg-blue-600/30 flex items-center justify-center animate-ping mb-6">
+              <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                <FiMic className="w-7 h-7" />
+              </div>
+            </div>
+            <h3 className="text-xl font-black mb-2">Listening to Nova Voice...</h3>
+            <p className="text-sm text-slate-300 font-medium">Say something like "iPhone 15 Pro", "Amul Milk", or "Sports Shoes"</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pincode Selector Modal */}
       <AnimatePresence>
         {isPincodeModalOpen && (
           <>
@@ -362,9 +421,9 @@ const Navbar = () => {
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 max-w-[90vw] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl z-50"
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-indigo-600 font-extrabold text-lg">
+                <div className="flex items-center gap-2 text-blue-600 font-extrabold text-lg">
                   <FiMapPin className="w-5 h-5" />
-                  <span>Delivery Pincode</span>
+                  <span>Select Delivery Location</span>
                 </div>
                 <button onClick={() => setIsPincodeModalOpen(false)} className="text-slate-400">
                   <FiX className="w-5 h-5" />
@@ -372,20 +431,25 @@ const Navbar = () => {
               </div>
 
               <form onSubmit={handlePincodeSubmit} className="space-y-4">
-                <input
-                  type="text"
-                  maxLength={6}
-                  placeholder="e.g. 110001, 560001, 400001"
-                  value={tempPincode}
-                  onChange={(e) => setTempPincode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-4 py-2.5 text-sm font-semibold rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-                />
+                <div>
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                    Enter Indian Pincode (6 Digits)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. 400001, 110001, 560001"
+                    value={tempPincode}
+                    onChange={(e) => setTempPincode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-4 py-3 text-sm font-semibold rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={tempPincode.length !== 6}
-                  className="w-full py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md"
+                  className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-colors"
                 >
-                  Verify Pincode
+                  Confirm Pincode
                 </button>
               </form>
             </motion.div>

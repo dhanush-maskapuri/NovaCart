@@ -1,12 +1,12 @@
-# 🛍️ ShopSphere
+# 🛍️ NovaCart – India's Smart Marketplace
 
-> Premium AI-Powered E-commerce Platform built using the MERN Stack.
+> India's Smartest Hyperlocal Marketplace & AI-Powered E-Commerce Platform built with the MERN Stack.
 
 ---
 
 ## 📖 About
 
-ShopSphere is a modern full-stack e-commerce web application designed with a clean, responsive, and premium user experience. The project is being built using the MERN stack and follows industry-standard project structure and best practices.
+NovaCart is India's smartest online marketplace combining the best of electronics, instant 10-minute grocery delivery (NovaMart), fashion, home decor, beauty, and appliances. Inspired by leading platforms like Amazon, Flipkart, Blinkit, Instamart, Croma, and Reliance Digital, NovaCart offers a ultra-fast, modern, responsive, and animated shopping experience tailored for Indian consumers.
 
 The goal is to create a production-ready shopping platform with secure authentication, intelligent product search, smooth user experience, online payments, and an admin dashboard.
 

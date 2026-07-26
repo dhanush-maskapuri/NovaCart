@@ -1,55 +1,73 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const morgan = require('morgan');
-const connectDB = require('./config/db');
-const errorHandler = require('./middlewares/errorMiddleware');
+const app = require('./app');
+const config = require('./config/env');
+const { connectDB } = require('./database/connectDB');
+const logger = require('./utils/logger');
+const MESSAGES = require('./constants/messages');
+const mongoose = require('mongoose');
 
-// Load environment variables
-dotenv.config();
+let server;
 
-// Initialize Express App
-const app = express();
-
-// Connect Database
-connectDB();
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-}));
-
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
-
-// Health Check Endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'ShopSphere Backend Server is running smoothly' });
+// Handle Uncaught Exceptions
+process.on('uncaughtException', (err) => {
+  logger.error('UNCAUGHT EXCEPTION! Shutting down server immediately...', err);
+  process.exit(1);
 });
 
-// Import Routes
-const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const cartRoutes = require('./routes/cartRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const userRoutes = require('./routes/userRoutes');
+/**
+ * Start NovaCart HTTP Server & Connect Database
+ */
+const startServer = async () => {
+  try {
+    // Establish Database Connection
+    await connectDB();
 
-// API Mount Points
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/users', userRoutes);
+    // Start HTTP Listener
+    server = app.listen(config.port, () => {
+      logger.info(`🚀 NovaCart API Server running in [${config.env}] mode on port ${config.port}`);
+      logger.info(`👉 Health Check Endpoint: http://localhost:${config.port}/api/v1/health`);
+    });
+  } catch (error) {
+    logger.error('Failed to initialize NovaCart Server:', error);
+    process.exit(1);
+  }
+};
 
-// Centralized Error Handling Middleware
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 ShopSphere Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+// Handle Unhandled Promise Rejections
+process.on('unhandledRejection', (err) => {
+  logger.error('UNHANDLED REJECTION! Shutting down server gracefully...', err);
+  if (server) {
+    server.close(() => {
+      mongoose.connection.close(false, () => {
+        process.exit(1);
+      });
+    });
+  } else {
+    process.exit(1);
+  }
 });
+
+// Handle SIGINT & SIGTERM Graceful Shutdown Signals
+const gracefulShutdown = (signal) => {
+  logger.info(`Received ${signal} signal. ${MESSAGES.SERVER.SHUTDOWN}`);
+  if (server) {
+    server.close(async () => {
+      logger.info('HTTP Server closed.');
+      try {
+        await mongoose.connection.close(false);
+        logger.info('MongoDB Connection closed cleanly.');
+        process.exit(0);
+      } catch (err) {
+        logger.error('Error closing MongoDB connection:', err);
+        process.exit(1);
+      }
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Execute Server Startup
+startServer();

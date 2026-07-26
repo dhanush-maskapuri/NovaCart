@@ -1,11 +1,11 @@
 const asyncHandler = require('../utils/asyncHandler');
-const ApiResponse = require('../utils/apiResponse');
+const ApiResponse = require('../utils/ApiResponse');
 
 // @desc    Update user profile
-// @route   PUT /api/users/profile
+// @route   PUT /api/v1/users/profile
 // @access  Private
 const updateUserProfile = asyncHandler(async (req, res) => {
-  res.status(200).json(new ApiResponse(200, {}, 'Update user profile endpoint skeleton'));
+  return ApiResponse.success(res, 'Update user profile endpoint skeleton', {}, 200);
 });
 
 module.exports = { updateUserProfile };

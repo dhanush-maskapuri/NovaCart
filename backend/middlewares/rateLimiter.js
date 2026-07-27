@@ -4,13 +4,14 @@ const HTTP_STATUS = require('../constants/httpStatusCodes');
 
 /**
  * Express Rate Limiter Middleware
- * Restricts excessive API requests to prevent DDoS attacks and brute-force attempts.
+ * Restricts excessive API requests in production to prevent DDoS attacks.
  */
 const apiRateLimiter = rateLimit({
-  windowMs: config.rateLimit.windowMs, // 15 minutes by default
-  max: config.rateLimit.max, // Limit each IP to max requests per windowMs
+  windowMs: config.rateLimit.windowMs,
+  max: config.env === 'production' ? config.rateLimit.max : 10000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => config.env !== 'production',
   handler: (req, res) => {
     return res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
       success: false,

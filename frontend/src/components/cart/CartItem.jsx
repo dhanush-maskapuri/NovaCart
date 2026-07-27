@@ -11,11 +11,12 @@ const CartItem = ({ item }) => {
   const { removeFromCart, updateQuantity } = useCart();
   const { addToWishlist } = useWishlist();
 
-  if (!item || !item.product) return null;
+  if (!item) return null;
 
-  const { product, quantity = 1 } = item;
-  const { name, brand, category, price, image } = product;
-  const productId = product._id || product.id;
+  const productData = item.product || item;
+  const quantity = item.quantity || 1;
+  const { name, brand, category, price, image } = productData;
+  const productId = productData._id || productData.id || item._id || item.id;
 
   const handleDecrease = () => {
     if (quantity > 1) {

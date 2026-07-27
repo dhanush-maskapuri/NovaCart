@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiCheck, FiTruck, FiPackage, FiMapPin, FiClock, FiPhone } from 'react-icons/fi';
-import { formatDate } from '../../utils/formatters';
+import { FiX, FiCheck, FiTruck, FiPhone } from 'react-icons/fi';
 
 /**
  * OrderTrackingModal Component - Live Delivery Timeline Tracker
@@ -9,22 +8,31 @@ const OrderTrackingModal = ({ isOpen, onClose, order }) => {
   if (!isOpen || !order) return null;
 
   const {
-    id = 'ORD-98421',
-    createdAt = new Date().toISOString(),
-    status = 'Out for Delivery',
-    trackingNumber = 'SFX-908123984',
-    deliveryPartner = 'Shadowfax Express Rider',
-    courierPhone = '+91 9876543210',
-    estimatedArrival = 'Today by 5:30 PM',
+    _id,
+    id = order.invoiceNumber || _id || 'ORD-98421',
+    orderStatus = order.status || 'Placed',
+    trackingId = order.trackingId || 'TRK-SFX-908123984',
+    courierPartner = order.courierPartner || 'Shadowfax Express Rider',
+    expectedDeliveryDate = order.expectedDeliveryDate,
+    timeline = [],
   } = order;
 
-  const steps = [
-    { label: 'Order Placed', time: '10:15 AM', done: true },
-    { label: 'Packed & Quality Verified', time: '11:30 AM', done: true },
-    { label: 'Shipped from Hub', time: '01:45 PM', done: true },
-    { label: 'Out for Delivery', time: '03:10 PM', done: status === 'Out for Delivery' || status === 'Delivered' },
-    { label: 'Delivered', time: 'Estimated 05:30 PM', done: status === 'Delivered' },
+  const defaultSteps = [
+    { label: 'Order Placed', time: 'Completed', done: true },
+    { label: 'Confirmed by Seller', time: 'Verified', done: ['Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'].includes(orderStatus) },
+    { label: 'Packed & Quality Checked', time: 'Verified', done: ['Packed', 'Shipped', 'Out for Delivery', 'Delivered'].includes(orderStatus) },
+    { label: 'Shipped from Hub', time: 'In Transit', done: ['Shipped', 'Out for Delivery', 'Delivered'].includes(orderStatus) },
+    { label: 'Out for Delivery', time: 'Assigned', done: ['Out for Delivery', 'Delivered'].includes(orderStatus) },
+    { label: 'Delivered to Doorstep', time: 'Final', done: orderStatus === 'Delivered' },
   ];
+
+  const stepsToRender = timeline.length > 0
+    ? timeline.map((t) => ({
+        label: `${t.status} - ${t.description || ''}`,
+        time: new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        done: true,
+      }))
+    : defaultSteps;
 
   return (
     <AnimatePresence>
@@ -42,7 +50,7 @@ const OrderTrackingModal = ({ isOpen, onClose, order }) => {
                 LIVE DELIVERY TIMELINE
               </span>
               <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">
-                Tracking Order #{id}
+                Tracking #{id}
               </h3>
             </div>
             <button
@@ -61,26 +69,26 @@ const OrderTrackingModal = ({ isOpen, onClose, order }) => {
               </div>
               <div>
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  {deliveryPartner}
+                  {courierPartner}
                 </h4>
-                <p className="text-[11px] font-mono text-slate-500">Waybill: {trackingNumber}</p>
+                <p className="text-[11px] font-mono text-slate-500">Waybill: {trackingId}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <a
-                href={`tel:${courierPhone}`}
+                href="tel:+919876543210"
                 className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-indigo-600 font-bold text-xs shadow-xs border border-indigo-200 flex items-center gap-1.5"
               >
                 <FiPhone className="w-3.5 h-3.5" />
-                <span>Call Rider</span>
+                <span>Call Courier Rider</span>
               </a>
             </div>
           </div>
 
           {/* Timeline Visualizer */}
           <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
-            {steps.map((step, idx) => (
+            {stepsToRender.map((step, idx) => (
               <div key={idx} className="relative flex items-start gap-4">
                 <div
                   className={`absolute -left-[23px] top-0.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
@@ -111,7 +119,7 @@ const OrderTrackingModal = ({ isOpen, onClose, order }) => {
           </div>
 
           <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>Estimated Arrival: <strong className="text-indigo-600">{estimatedArrival}</strong></span>
+            <span>Expected Delivery: <strong className="text-indigo-600">{expectedDeliveryDate ? new Date(expectedDeliveryDate).toLocaleDateString('en-IN') : 'Tomorrow'}</strong></span>
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold"

@@ -17,9 +17,10 @@ import { fadeIn } from '../animations/variants';
  * Home Page Component - NOVACART ("India's Smart Marketplace")
  */
 const Home = () => {
-  const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 4);
-  const electronicsProducts = products.filter((p) => p.category === 'Mobiles' || p.category === 'Laptops' || p.category === 'TV & Appliances').slice(0, 4);
-  const groceryProducts = products.filter((p) => p.category === 'Groceries').slice(0, 4);
+  const electronicsProducts = products.filter((p) => p.category === 'Mobiles' || p.category === 'Laptops' || p.category === 'Electronics' || p.category === 'TV & Appliances').slice(0, 4);
+  const groceryProducts = products.filter((p) => p.category === 'Groceries' || p.category === 'Dairy & Bakery').slice(0, 4);
+  const displayElectronics = electronicsProducts.length > 0 ? electronicsProducts : products.slice(0, 4);
+  const displayGroceries = groceryProducts.length > 0 ? groceryProducts : products.slice(4, 8);
 
   return (
     <motion.div
@@ -52,7 +53,7 @@ const Home = () => {
             </h2>
           </div>
         </div>
-        <ProductGrid products={electronicsProducts} />
+        <ProductGrid products={displayElectronics} />
       </section>
 
       {/* 6. NovaMart 10-Minute Instant Delivery Corner */}
@@ -67,7 +68,7 @@ const Home = () => {
             </h2>
           </div>
         </div>
-        <ProductGrid products={groceryProducts} />
+        <ProductGrid products={displayGroceries} />
       </section>
 
       {/* 7. Official Brand Collections */}

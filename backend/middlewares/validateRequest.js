@@ -1,4 +1,4 @@
-const ApiError = require('../utils/ApiError');
+const ApiError = require('../utils/apiError');
 const HTTP_STATUS = require('../constants/httpStatusCodes');
 
 /**

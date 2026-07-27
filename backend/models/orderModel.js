@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+const timelineSchema = new mongoose.Schema({
+  status: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  location: { type: String, default: 'Warehouse Hub' },
+  description: { type: String, default: '' },
+});
+
 const orderSchema = new mongoose.Schema(
   {
     user: {
@@ -18,25 +25,56 @@ const orderSchema = new mongoose.Schema(
           ref: 'Product',
           required: true,
         },
+        hsnCode: { type: String, default: '8518' },
       },
     ],
     shippingAddress: {
+      fullName: { type: String, default: '' },
+      phone: { type: String, default: '' },
       street: { type: String, required: true },
       city: { type: String, required: true },
       state: { type: String, required: true },
       zipCode: { type: String, required: true },
-      country: { type: String, required: true },
+      country: { type: String, required: true, default: 'India' },
     },
     paymentMethod: {
       type: String,
       required: true,
-      default: 'Razorpay',
+      default: 'UPI / Cards',
     },
     paymentResult: {
       id: String,
       status: String,
       update_time: String,
       email_address: String,
+    },
+    invoiceNumber: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    companyGstin: {
+      type: String,
+      default: '27AAACN1234F1Z5',
+    },
+    gstDetails: {
+      taxableAmount: { type: Number, default: 0 },
+      cgst: { type: Number, default: 0 },
+      sgst: { type: Number, default: 0 },
+      totalGst: { type: Number, default: 0 },
+    },
+    subtotal: {
+      type: Number,
+      required: true,
+      default: 0.0,
+    },
+    discount: {
+      type: Number,
+      default: 0.0,
+    },
+    deliveryFee: {
+      type: Number,
+      default: 0.0,
     },
     totalPrice: {
       type: Number,
@@ -46,16 +84,34 @@ const orderSchema = new mongoose.Schema(
     isPaid: {
       type: Boolean,
       required: true,
-      default: false,
+      default: true,
     },
-    paidAt: Date,
+    paidAt: {
+      type: Date,
+      default: Date.now,
+    },
     orderStatus: {
       type: String,
       required: true,
-      enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Processing',
+      enum: ['Placed', 'Confirmed', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'],
+      default: 'Placed',
     },
+    trackingId: {
+      type: String,
+      default: () => `TRK-SFX-${Math.floor(100000000 + Math.random() * 900000000)}`,
+    },
+    courierPartner: {
+      type: String,
+      default: 'Shadowfax Express Rider',
+    },
+    expectedDeliveryDate: {
+      type: Date,
+      default: () => new Date(Date.now() + 86400000 * 2), // 2 days
+    },
+    timeline: [timelineSchema],
     deliveredAt: Date,
+    cancelledAt: Date,
+    returnedAt: Date,
   },
   { timestamps: true }
 );

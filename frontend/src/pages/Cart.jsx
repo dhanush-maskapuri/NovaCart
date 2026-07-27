@@ -17,7 +17,7 @@ const Cart = () => {
   const navigate = useNavigate();
 
   const subtotal = cart.reduce(
-    (acc, item) => acc + (item.product?.price || 0) * (item.quantity || 1),
+    (acc, item) => acc + (item.price || item.product?.price || 0) * (item.quantity || 1),
     0
   );
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,19 +16,18 @@ import {
   FiMic,
   FiGrid,
   FiCheck,
-  FiZap as FiSparkles,
+  FiTrash2,
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
 import { useAuth } from '../../hooks/useAuth';
-import { categories } from '../../data/categories';
+import { fetchNotificationsApi, markAllNotificationsReadApi, clearNotificationsApi } from '../../services/notificationService';
 import { APP_NAME, APP_TAGLINE } from '../../utils/constants';
 
 /**
  * Navbar Component - NovaCart ("India's Smart Marketplace")
- * Amazon-Style Search Bar (Category Dropdown + Search Input + Voice Mic + Search Button),
- * Sticky Header with Scroll Shadow, Pincode Selector, Notifications, Wishlist, Cart, Profile.
+ * Includes Live Notification Center with unread counter badge.
  */
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,7 +39,10 @@ const Navbar = () => {
   const [selectedPincode, setSelectedPincode] = useState('400001 - Mumbai');
   const [tempPincode, setTempPincode] = useState('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+
+  // Live Notifications State
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -50,8 +52,30 @@ const Navbar = () => {
   const { user } = useAuth();
 
   const totalCartItems = cart.reduce((total, item) => total + (item.quantity || 1), 0);
-  const totalCartPrice = cart.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+  const totalCartPrice = cart.reduce((total, item) => {
+    const price = item.price || item.product?.price || 0;
+    return total + (price * (item.quantity || 1));
+  }, 0);
   const totalWishlistItems = wishlist.length;
+
+  const loadNotifications = useCallback(async () => {
+    const token = localStorage.getItem('novacart_token') || localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetchNotificationsApi();
+      if (res && res.success && res.data) {
+        setNotifications(res.data.notifications || []);
+        setUnreadCount(res.data.unreadCount || 0);
+      }
+    } catch (err) {
+      console.warn('Notifications fetch warning:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications, user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,7 +92,6 @@ const Navbar = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsNotificationsOpen(false);
-    setIsMegaMenuOpen(false);
   }, [location.pathname]);
 
   const handleSearchSubmit = (e) => {
@@ -94,7 +117,6 @@ const Navbar = () => {
       recognition.onend = () => setIsListening(false);
       recognition.start();
     } else {
-      // Fallback voice simulation for browsers without WebSpeech API
       setIsListening(true);
       setTimeout(() => {
         const sampleQueries = ['iPhone 15 Pro', 'Amul Butter', 'Teakwood Sofa', 'boAt Earbuds'];
@@ -115,11 +137,25 @@ const Navbar = () => {
     }
   };
 
-  const notifications = [
-    { title: '⚡ Great Indian Festive Sale Live', desc: 'Up to 70% Off on Electronics & NovaMart 10-Min Groceries', time: 'Just Now' },
-    { title: '📦 Order #ORD-98421 Dispatched', desc: 'Delivery partner is en-route to your location', time: '12 Mins Ago' },
-    { title: '🏷️ Price Drop Alert', desc: 'Samsung S24 Ultra price decreased by ₹10,000!', time: '1 Hour Ago' },
-  ];
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsReadApi();
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.warn('Error marking read:', err);
+    }
+  };
+
+  const handleClearNotifications = async () => {
+    try {
+      await clearNotificationsApi();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.warn('Error clearing notifications:', err);
+    }
+  };
 
   return (
     <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
@@ -152,10 +188,7 @@ const Navbar = () => {
       {/* Main Bar */}
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-3 lg:gap-6">
         {/* Brand Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2.5 shrink-0 group"
-        >
+        <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
           <motion.div
             whileHover={{ rotate: 12, scale: 1.08 }}
             transition={{ type: 'spring', stiffness: 300 }}
@@ -247,7 +280,7 @@ const Navbar = () => {
             <span>NovaMart 10-Min</span>
           </NavLink>
 
-          {/* Notifications */}
+          {/* Live Notification Center */}
           <div className="relative">
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -255,7 +288,11 @@ const Navbar = () => {
               className="p-2.5 rounded-2xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 relative transition-colors"
             >
               <FiBell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-slate-950 text-[10px] font-black rounded-full flex items-center justify-center shadow-xs">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             <AnimatePresence>
@@ -268,18 +305,32 @@ const Navbar = () => {
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span className="flex items-center gap-1.5">
-                      <FiBell className="text-blue-600" /> Notifications
+                      <FiBell className="text-blue-600" /> Notifications ({unreadCount} Unread)
                     </span>
-                    <span className="text-blue-600 text-[10px] cursor-pointer hover:underline">Mark read</span>
+                    <div className="flex gap-2">
+                      <button onClick={handleMarkAllRead} className="text-blue-600 text-[10px] hover:underline">Read All</button>
+                      <button onClick={handleClearNotifications} className="text-rose-500 text-[10px] hover:underline">Clear</button>
+                    </div>
                   </div>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {notifications.map((n, idx) => (
-                      <div key={idx} className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs space-y-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <h5 className="font-extrabold text-slate-900 dark:text-slate-100">{n.title}</h5>
-                        <p className="text-[11px] text-slate-600 dark:text-slate-400">{n.desc}</p>
-                        <span className="text-[9px] text-slate-400 block font-semibold">{n.time}</span>
-                      </div>
-                    ))}
+                    {notifications.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-4 font-bold">No notifications yet</p>
+                    ) : (
+                      notifications.map((n, idx) => (
+                        <div
+                          key={n._id || idx}
+                          className={`p-2.5 rounded-2xl text-xs space-y-1 transition-colors ${
+                            n.isRead ? 'bg-slate-50 dark:bg-slate-800/40 text-slate-600' : 'bg-indigo-50/70 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-slate-900 dark:text-slate-100'
+                          }`}
+                        >
+                          <h5 className="font-extrabold">{n.title}</h5>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400">{n.message}</p>
+                          <span className="text-[9px] text-slate-400 block font-semibold">
+                            {new Date(n.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -338,13 +389,6 @@ const Navbar = () => {
                 <FiUser className="w-4 h-4 text-blue-600" />
                 <span className="truncate max-w-[80px]">{user.name || 'Profile'}</span>
               </Link>
-              <Link
-                to="/admin"
-                title="Admin Suite"
-                className="p-2 rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-bold hover:scale-105 transition-transform"
-              >
-                <FiGrid className="w-4 h-4" />
-              </Link>
             </div>
           ) : (
             <Link
@@ -365,97 +409,6 @@ const Navbar = () => {
           </button>
         </div>
       </div>
-
-      {/* Mobile Search Bar Row */}
-      <div className="md:hidden px-4 pb-3">
-        <form onSubmit={handleSearchSubmit} className="flex items-center h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-3 gap-2">
-          <FiSearch className="w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search products & 10-min groceries..."
-            className="w-full text-xs font-medium bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
-          />
-          <button type="button" onClick={handleVoiceSearch} className="text-slate-400">
-            <FiMic className="w-4 h-4 text-blue-600" />
-          </button>
-        </form>
-      </div>
-
-      {/* Voice Listening Overlay */}
-      <AnimatePresence>
-        {isListening && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white"
-          >
-            <div className="w-20 h-20 rounded-full bg-blue-600/30 flex items-center justify-center animate-ping mb-6">
-              <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                <FiMic className="w-7 h-7" />
-              </div>
-            </div>
-            <h3 className="text-xl font-black mb-2">Listening to Nova Voice...</h3>
-            <p className="text-sm text-slate-300 font-medium">Say something like "iPhone 15 Pro", "Amul Milk", or "Sports Shoes"</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Pincode Selector Modal */}
-      <AnimatePresence>
-        {isPincodeModalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsPincodeModalOpen(false)}
-              className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 max-w-[90vw] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl z-50"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-blue-600 font-extrabold text-lg">
-                  <FiMapPin className="w-5 h-5" />
-                  <span>Select Delivery Location</span>
-                </div>
-                <button onClick={() => setIsPincodeModalOpen(false)} className="text-slate-400">
-                  <FiX className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handlePincodeSubmit} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                    Enter Indian Pincode (6 Digits)
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="e.g. 400001, 110001, 560001"
-                    value={tempPincode}
-                    onChange={(e) => setTempPincode(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-4 py-3 text-sm font-semibold rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={tempPincode.length !== 6}
-                  className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-colors"
-                >
-                  Confirm Pincode
-                </button>
-              </form>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </header>
   );
 };

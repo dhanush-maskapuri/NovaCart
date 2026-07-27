@@ -2,8 +2,13 @@ const express = require('express');
 const healthRoutes = require('./healthRoutes');
 const authRoutes = require('./authRoutes');
 const productRoutes = require('./productRoutes');
+const categoryRoutes = require('./categoryRoutes');
 const cartRoutes = require('./cartRoutes');
+const wishlistRoutes = require('./wishlistRoutes');
+const addressRoutes = require('./addressRoutes');
+const couponRoutes = require('./couponRoutes');
 const orderRoutes = require('./orderRoutes');
+const notificationRoutes = require('./notificationRoutes');
 const userRoutes = require('./userRoutes');
 
 const router = express.Router();
@@ -14,8 +19,13 @@ const router = express.Router();
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
+router.use('/categories', categoryRoutes);
 router.use('/cart', cartRoutes);
+router.use('/wishlist', wishlistRoutes);
+router.use('/addresses', addressRoutes);
+router.use('/coupons', couponRoutes);
 router.use('/orders', orderRoutes);
+router.use('/notifications', notificationRoutes);
 router.use('/users', userRoutes);
 
 module.exports = router;

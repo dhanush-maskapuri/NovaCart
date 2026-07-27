@@ -1,9 +1,6 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
+import { fetchWishlist, addToWishlistApi, removeFromWishlistApi, moveToCartApi, clearWishlistApi } from '../services/wishlistService';
 
-/**
- * WishlistContext
- * Manages wishlist state with localStorage persistence and toggle functionality.
- */
 export const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
@@ -16,7 +13,29 @@ export const WishlistProvider = ({ children }) => {
     }
   });
 
-  // Sync wishlist state with localStorage
+  const [loading, setLoading] = useState(false);
+
+  const syncWishlistWithApi = useCallback(async () => {
+    const token = localStorage.getItem('novacart_token') || localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const res = await fetchWishlist();
+      if (res && res.success && res.data && Array.isArray(res.data.products)) {
+        setWishlist(res.data.products);
+      }
+    } catch (err) {
+      console.warn('Wishlist API sync warning:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    syncWishlistWithApi();
+  }, [syncWishlistWithApi]);
+
   useEffect(() => {
     try {
       localStorage.setItem('shopsphere_wishlist', JSON.stringify(wishlist));
@@ -25,8 +44,7 @@ export const WishlistProvider = ({ children }) => {
     }
   }, [wishlist]);
 
-  // Add an item to the wishlist
-  const addToWishlist = (product) => {
+  const addToWishlist = async (product) => {
     if (!product) return;
     const targetId = product._id || product.id;
 
@@ -35,15 +53,49 @@ export const WishlistProvider = ({ children }) => {
       if (exists) return prev;
       return [...prev, product];
     });
+
+    const token = localStorage.getItem('novacart_token') || localStorage.getItem('token');
+    if (token) {
+      try {
+        await addToWishlistApi(targetId);
+        await syncWishlistWithApi();
+      } catch (err) {
+        console.warn('Add to wishlist API error:', err);
+      }
+    }
   };
 
-  // Remove an item from the wishlist by ID
-  const removeFromWishlist = (productId) => {
+  const removeFromWishlist = async (productId) => {
     if (!productId) return;
     setWishlist((prev) => prev.filter((item) => (item._id || item.id) !== productId));
+
+    const token = localStorage.getItem('novacart_token') || localStorage.getItem('token');
+    if (token) {
+      try {
+        await removeFromWishlistApi(productId);
+        await syncWishlistWithApi();
+      } catch (err) {
+        console.warn('Remove from wishlist API error:', err);
+      }
+    }
   };
 
-  // Toggle item in wishlist (adds if not present, removes if present)
+  const moveToCartAction = async (product) => {
+    if (!product) return;
+    const productId = product._id || product.id;
+    removeFromWishlist(productId);
+
+    const token = localStorage.getItem('novacart_token') || localStorage.getItem('token');
+    if (token) {
+      try {
+        await moveToCartApi(productId);
+        await syncWishlistWithApi();
+      } catch (err) {
+        console.warn('Move to cart API error:', err);
+      }
+    }
+  };
+
   const toggleWishlist = (product) => {
     if (!product) return;
     const targetId = product._id || product.id;
@@ -54,31 +106,39 @@ export const WishlistProvider = ({ children }) => {
     }
   };
 
-  // Check if an item is present in wishlist
   const isInWishlist = (productId) => {
     if (!productId) return false;
     return wishlist.some((item) => (item._id || item.id) === productId);
   };
 
-  // Clear all wishlist items
-  const clearWishlist = () => {
+  const clearWishlist = async () => {
     setWishlist([]);
+    const token = localStorage.getItem('novacart_token') || localStorage.getItem('token');
+    if (token) {
+      try {
+        await clearWishlistApi();
+      } catch (err) {
+        console.warn('Clear wishlist API error:', err);
+      }
+    }
   };
 
   return (
     <WishlistContext.Provider
       value={{
         wishlist,
+        loading,
         addToWishlist,
         removeFromWishlist,
+        moveToCartAction,
         toggleWishlist,
         isInWishlist,
         clearWishlist,
         wishlistCount: wishlist.length,
+        syncWishlistWithApi,
       }}
     >
       {children}
     </WishlistContext.Provider>
   );
 };
-

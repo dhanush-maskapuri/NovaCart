@@ -9,6 +9,7 @@ import Wishlist from '../pages/Wishlist';
 import Checkout from '../pages/Checkout';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import ResetPassword from '../pages/ResetPassword';
 import Profile from '../pages/Profile';
 import Orders from '../pages/Orders';
 import AIAssistantPage from '../pages/AIAssistantPage';
@@ -34,13 +35,14 @@ const AppRoutes = () => {
         <Route path="shop" element={<Shop />} />
         <Route path="product/:id" element={<ProductDetails />} />
         <Route path="cart" element={<Cart />} />
-        <Route path="wishlist" element={<Wishlist />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="reset-password/:token" element={<ResetPassword />} />
         <Route path="ai-assistant" element={<AIAssistantPage />} />
 
         {/* Protected User Routes */}
         <Route element={<ProtectedRoute />}>
+          <Route path="wishlist" element={<Wishlist />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<Orders />} />

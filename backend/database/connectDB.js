@@ -15,6 +15,19 @@ const connectDB = async () => {
 
     logger.info(`${MESSAGES.DATABASE.CONNECTED} Host: ${conn.connection.host}`);
 
+    // Auto-seed if database is empty
+    try {
+      const Product = require('../models/productModel');
+      const count = await Product.countDocuments();
+      if (count === 0) {
+        logger.info('Product database is empty. Auto-seeding 150+ Indian marketplace products...');
+        const seedDatabase = require('../seeds/seedProducts');
+        await seedDatabase();
+      }
+    } catch (seedErr) {
+      logger.warn('Auto-seed check skipped or failed:', seedErr.message);
+    }
+
     // Connection event listeners
     mongoose.connection.on('error', (err) => {
       logger.error(`${MESSAGES.DATABASE.ERROR}: ${err.message}`, err);

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowRight, FiShield, FiTag, FiCheck, FiInfo } from 'react-icons/fi';
+import { FiArrowRight, FiShield, FiTag, FiCheck, FiX } from 'react-icons/fi';
 import Button from '../common/Button';
+import { applyCouponApi } from '../../services/couponService';
 import { formatCurrency, calculateGST } from '../../utils/formatters';
 
 /**
  * CartSummary Component - NOVACART
- * Order calculation in ₹, GST tax breakdown, Platform Fee, Indian Coupon Codes.
+ * Original Amount, Coupon Discount Amount with Remove button, GST calculation, Final Amount.
  */
 const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
   const navigate = useNavigate();
@@ -14,33 +15,40 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [appliedCode, setAppliedCode] = useState('');
   const [promoError, setPromoError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const validPromos = {
-    NOVACART100: 500,
-    FESTIVE500: 500,
-    INDIA100: 200,
-    GROCERY10: 100,
-  };
-
-  const handleApplyPromo = (e) => {
+  const handleApplyPromo = async (e) => {
     e.preventDefault();
     setPromoError('');
-    const code = promoCode.trim().toUpperCase();
+    if (!promoCode.trim()) return;
 
-    if (validPromos[code]) {
-      setAppliedDiscount(validPromos[code]);
-      setAppliedCode(code);
-      setPromoCode('');
-    } else {
-      setPromoError('Invalid coupon code. Try NOVACART100 or FESTIVE500');
+    setLoading(true);
+    try {
+      const res = await applyCouponApi(promoCode, subtotal);
+      if (res && res.success && res.data) {
+        setAppliedDiscount(res.data.discountAmount);
+        setAppliedCode(res.data.code);
+        setPromoCode('');
+      } else {
+        setPromoError('Invalid coupon code. Try WELCOME10 or FESTIVE20.');
+      }
+    } catch (err) {
+      setPromoError(err.response?.data?.message || 'Invalid or expired coupon code.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedDiscount(0);
+    setAppliedCode('');
+    setPromoError('');
   };
 
   const gstBreakdown = calculateGST(subtotal);
   const deliveryFee = subtotal >= 499 || subtotal === 0 ? 0 : 49;
-  const platformFee = items.length > 0 ? 7 : 0;
-  const packingFee = items.length > 0 ? 15 : 0;
-  const total = Math.max(0, subtotal - appliedDiscount + deliveryFee + platformFee + packingFee);
+  const platformFee = subtotal > 0 ? 7 : 0;
+  const total = Math.max(0, subtotal - appliedDiscount + deliveryFee + platformFee);
 
   return (
     <div className="p-6 md:p-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-sm space-y-6 sticky top-24">
@@ -60,18 +68,19 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Coupon Code (e.g. NOVACART100)"
+              placeholder="Coupon Code (e.g. WELCOME10)"
               value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
               className="w-full px-3.5 py-2.5 text-xs font-bold font-mono rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 uppercase"
             />
             <FiTag className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           </div>
           <button
             type="submit"
-            className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-colors"
+            disabled={loading}
+            className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition-colors disabled:opacity-50"
           >
-            Apply
+            {loading ? 'Validating...' : 'Apply'}
           </button>
         </div>
 
@@ -83,16 +92,14 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
           <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-xs font-bold text-emerald-600 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <FiCheck className="w-4 h-4" />
-              <span>Coupon {appliedCode} Applied! (-{formatCurrency(appliedDiscount)})</span>
+              <span>Coupon <strong>{appliedCode}</strong> Applied! (-{formatCurrency(appliedDiscount)})</span>
             </span>
             <button
-              onClick={() => {
-                setAppliedDiscount(0);
-                setAppliedCode('');
-              }}
-              className="text-[10px] text-rose-500 hover:underline"
+              type="button"
+              onClick={handleRemovePromo}
+              className="text-[10px] text-rose-500 hover:underline flex items-center gap-0.5"
             >
-              Remove
+              <FiX className="w-3 h-3" /> Remove
             </button>
           </div>
         )}
@@ -101,25 +108,20 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
       {/* Summary Rows */}
       <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
         <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
-          <span>Items Subtotal</span>
+          <span>Original Amount (Subtotal)</span>
           <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(subtotal)}</span>
         </div>
 
         {appliedDiscount > 0 && (
-          <div className="flex items-center justify-between text-emerald-600 font-bold">
-            <span>Festive Coupon Savings</span>
+          <div className="flex items-center justify-between text-emerald-600 font-extrabold">
+            <span>Coupon Discount Amount</span>
             <span>-{formatCurrency(appliedDiscount)}</span>
           </div>
         )}
 
         <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
-          <span>Platform & Tech Fee</span>
+          <span>Platform & Convenience Fee</span>
           <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(platformFee)}</span>
-        </div>
-
-        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
-          <span>Safety Packing & Handling Fee</span>
-          <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(packingFee)}</span>
         </div>
 
         <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
@@ -134,17 +136,17 @@ const CartSummary = ({ subtotal = 0, items = [], onCheckout }) => {
         {/* GST Tax Breakdown Box */}
         <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1 text-[11px]">
           <div className="flex justify-between font-bold text-slate-700 dark:text-slate-300">
-            <span>Includes 18% GST (CGST + SGST):</span>
-            <span className="text-blue-600 font-mono font-bold">{formatCurrency(gstBreakdown.totalGst)}</span>
+            <span>Includes 18% GST (CGST 9% + SGST 9%):</span>
+            <span className="text-indigo-600 font-mono font-bold">{formatCurrency(gstBreakdown.totalGst)}</span>
           </div>
           <p className="text-[10px] text-slate-400">
-            Input Tax Credit ready invoice available on checkout.
+            Taxable Value: {formatCurrency(gstBreakdown.basePrice)}
           </p>
         </div>
 
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-baseline justify-between text-base font-black text-slate-900 dark:text-slate-100">
-          <span>Grand Total</span>
-          <span className="text-xl text-blue-600 dark:text-blue-400">{formatCurrency(total)}</span>
+          <span>Final Payable Amount</span>
+          <span className="text-xl text-indigo-600 dark:text-indigo-400">{formatCurrency(total)}</span>
         </div>
       </div>
 

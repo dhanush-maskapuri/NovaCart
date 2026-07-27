@@ -1,5 +1,5 @@
-const ApiError = require('../utils/ApiError');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiError = require('../utils/apiError');
+const ApiResponse = require('../utils/apiResponse');
 const HTTP_STATUS = require('../constants/httpStatusCodes');
 const config = require('../config/env');
 const logger = require('../utils/logger');

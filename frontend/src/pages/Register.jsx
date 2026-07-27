@@ -39,8 +39,9 @@ const Register = () => {
   };
 
   const strength = getPasswordStrength(password);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -70,8 +71,19 @@ const Register = () => {
       return;
     }
 
-    register({ name, email });
-    navigate('/shop');
+    setSubmitting(true);
+    try {
+      const res = await register({ name: name.trim(), email: email.trim(), password });
+      if (res.success) {
+        navigate('/profile');
+      } else {
+        setError(res.error || 'Registration failed');
+      }
+    } catch (err) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

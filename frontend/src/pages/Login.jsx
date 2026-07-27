@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiSmartphone, FiShield } from 'react-icons/fi';
 import { FaGoogle, FaApple } from 'react-icons/fa';
@@ -16,6 +16,7 @@ import { APP_NAME, APP_TAGLINE } from '../utils/constants';
  */
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, setUser } = useAuth();
 
   const [authMode, setAuthMode] = useState('email'); // 'email' | 'otp'
@@ -28,45 +29,45 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const redirectPath = location.state?.from?.pathname || '/profile';
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
 
-    if (authMode === 'email') {
-      const res = login(email, password);
-      if (res.success) {
-        navigate('/shop');
-      } else {
-        setUser({
-          name: 'Rahul Sharma',
-          email: email || 'rahul@novacart.in',
-          role: 'customer',
-          memberSince: 'July 2026',
-        });
-        navigate('/shop');
-      }
-    } else {
-      if (!otpSent) {
-        if (phone.length === 10) {
-          setOtpSent(true);
+    try {
+      if (authMode === 'email') {
+        const res = await login(email, password);
+        if (res.success) {
+          navigate(redirectPath, { replace: true });
         } else {
-          setError('Please enter a valid 10-digit mobile number.');
+          setError(res.error || 'Invalid email or password');
         }
       } else {
-        if (otp.length === 4) {
-          setUser({
-            name: 'Rahul Sharma',
-            email: 'rahul@novacart.in',
-            phone: `+91 ${phone}`,
-            role: 'customer',
-            memberSince: 'July 2026',
-          });
-          navigate('/shop');
+        if (!otpSent) {
+          if (phone.length === 10) {
+            setOtpSent(true);
+          } else {
+            setError('Please enter a valid 10-digit mobile number.');
+          }
         } else {
-          setError('Enter 4-digit OTP code (e.g. 1234)');
+          if (otp.length === 4) {
+            const res = await login('demo@shopsphere.com', '123456');
+            if (res.success) {
+              navigate(redirectPath, { replace: true });
+            }
+          } else {
+            setError('Enter 4-digit OTP code (e.g. 1234)');
+          }
         }
       }
+    } catch (err) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 

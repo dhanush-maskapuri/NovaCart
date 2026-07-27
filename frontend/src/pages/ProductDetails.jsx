@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -11,39 +11,85 @@ import {
   FiMinus,
   FiPlus,
   FiMapPin,
-  FiZap,
-  FiPercent,
   FiFileText,
-  FiLayers,
+  FiAlertTriangle,
 } from 'react-icons/fi';
 import ProductGallery from '../components/product/ProductGallery';
 import Rating from '../components/product/Rating';
 import ReviewCard from '../components/product/ReviewCard';
 import ProductGrid from '../components/product/ProductGrid';
 import Button from '../components/common/Button';
+import Loader from '../components/common/Loader';
 import EmptyState from '../components/common/EmptyState';
 import { products, mockReviews } from '../data/products';
+import { fetchProductById, fetchProducts } from '../services/productService';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
+import { useRecentlyViewed } from '../context/RecentlyViewedContext';
 import { fadeIn } from '../animations/variants';
 import { formatCurrency, calculateGST } from '../utils/formatters';
 
 /**
- * ProductDetails Page Component - Indian Marketplace Overhaul
- * Pincode Delivery Check, Bank Offers & Coupons, GST Claim Details, Specs,
- * Frequently Bought Together bundle widget, & Customer Reviews.
+ * ProductDetails Page Component - Backend API & Recently Viewed Tracking Integrated
  */
 const ProductDetails = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addRecentlyViewed } = useRecentlyViewed();
 
+  const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('specs');
   const [pincode, setPincode] = useState('');
   const [pincodeStatus, setPincodeStatus] = useState(null);
 
-  const product = products.find((p) => p._id === id) || products[0];
+  const loadProductData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchProductById(id);
+      let foundProd = null;
+      if (res && res.success && res.data) {
+        foundProd = res.data;
+      } else {
+        foundProd = products.find((p) => p._id === id) || products[0];
+      }
+      setProduct(foundProd);
+      if (foundProd) {
+        addRecentlyViewed(foundProd);
+      }
+
+      // Fetch related items
+      const relRes = await fetchProducts({ limit: 4 });
+      if (relRes && relRes.success && Array.isArray(relRes.data?.products)) {
+        setRelatedProducts(relRes.data.products.filter((p) => p._id !== id).slice(0, 4));
+      } else {
+        setRelatedProducts(products.slice(1, 5));
+      }
+    } catch (err) {
+      console.warn('API error fetching product details, using local dataset:', err);
+      const found = products.find((p) => p._id === id) || products[0];
+      setProduct(found);
+      if (found) addRecentlyViewed(found);
+      setRelatedProducts(products.slice(1, 5));
+    } finally {
+      setLoading(false);
+    }
+  }, [id, addRecentlyViewed]);
+
+  useEffect(() => {
+    loadProductData();
+  }, [loadProductData]);
+
+  if (loading) {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center gap-3">
+        <Loader message="Loading product details from NovaCart..." />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -64,16 +110,38 @@ const ProductDetails = () => {
     discount,
     rating = 4.8,
     reviewsCount = 42,
+    numReviews = 42,
+    images = [],
+    image,
     gallery = [],
     description,
+    specifications = {},
     specs = {},
-    inStock = true,
-    hsnCode = '8518',
+    stock = 10,
+    status,
+    seller = 'NovaCart Official Retailer',
+    warranty = '1 Year Manufacturer Warranty',
     deliveryTime = '10 Mins Express',
+    deliveryEstimate = '10 Mins Express',
+    returnPolicy = '7 Days Replacement Policy',
+    highlights = [],
   } = product;
 
+  const isStockAvailable = stock > 0 && status !== 'out_of_stock';
   const isWishlisted = isInWishlist(_id);
   const gstDetails = calculateGST(price * quantity);
+
+  const imageGallery =
+    gallery.length > 0
+      ? gallery
+      : images.length > 0
+      ? images.map((img) => img.url)
+      : [image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'];
+
+  const mergedSpecs = {
+    ...specs,
+    ...(specifications instanceof Map ? Object.fromEntries(specifications) : specifications),
+  };
 
   const handleWishlistToggle = () => {
     if (isWishlisted) {
@@ -84,246 +152,239 @@ const ProductDetails = () => {
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    if (isStockAvailable) {
+      addToCart(product, quantity);
+    }
   };
 
   const handlePincodeCheck = (e) => {
     e.preventDefault();
     if (pincode.length === 6) {
-      setPincodeStatus(`Available! ${deliveryTime} delivery for pincode ${pincode}`);
+      setPincodeStatus(`Available! ${deliveryTime || deliveryEstimate} delivery for pincode ${pincode}`);
     } else {
       setPincodeStatus('Please enter a valid 6-digit Indian Pincode.');
     }
   };
 
-  const relatedProducts = products.filter((p) => p.category === category && p._id !== _id).slice(0, 4);
-  const bundleProduct = products.find((p) => p._id !== _id) || products[1];
-
   return (
-    <motion.div variants={fadeIn} initial="hidden" animate="visible" className="space-y-10">
-      {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-2 text-xs font-bold text-slate-500">
+    <motion.div variants={fadeIn} initial="hidden" animate="visible" className="space-y-12">
+      {/* Breadcrumb Trail */}
+      <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500">
         <Link to="/" className="hover:text-indigo-600">Home</Link>
-        <FiChevronRight className="w-3 h-3" />
-        <Link to="/shop" className="hover:text-indigo-600">Shop Catalog</Link>
-        <FiChevronRight className="w-3 h-3" />
-        <span className="text-slate-900 dark:text-slate-100 font-extrabold truncate max-w-[240px]">
-          {name}
-        </span>
+        <FiChevronRight className="w-3.5 h-3.5" />
+        <Link to="/shop" className="hover:text-indigo-600">Shop</Link>
+        <FiChevronRight className="w-3.5 h-3.5" />
+        <span className="text-slate-900 dark:text-slate-100 font-bold truncate max-w-xs">{name}</span>
       </nav>
 
-      {/* Main Product Showcase Section */}
+      {/* Main Details Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         {/* Left Column: Image Gallery */}
-        <div className="lg:col-span-6">
-          <ProductGallery images={gallery} name={name} discount={discount} />
+        <div className="lg:col-span-6 sticky top-24">
+          <ProductGallery images={imageGallery} title={name} />
         </div>
 
-        {/* Right Column: Details & Indian Banking / Pincode Modules */}
-        <div className="lg:col-span-6 flex flex-col gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">
-              <span>{brand || category}</span>
-              <span className="text-slate-300">•</span>
-              <span className="text-slate-500 font-mono">HSN: {hsnCode}</span>
+        {/* Right Column: Information & Actions */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Header Info */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                {brand} • {category}
+              </span>
+              {isStockAvailable ? (
+                <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200">
+                  In Stock ({stock} Available)
+                </span>
+              ) : (
+                <span className="text-[11px] font-black text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1">
+                  <FiAlertTriangle /> Out of Stock
+                </span>
+              )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
               {name}
             </h1>
 
-            <div className="flex items-center gap-4 mt-2">
-              <Rating rating={rating} reviewsCount={reviewsCount} size="md" />
-              <span className="text-slate-300">|</span>
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full">
-                <FiCheckCircle className="w-3.5 h-3.5" />
-                {inStock ? 'In Stock' : 'Out of Stock'}
-              </span>
+            <div className="flex items-center gap-3 pt-1">
+              <Rating value={rating} text={`${reviewsCount || numReviews} verified ratings`} />
+              <span className="text-xs text-slate-400">|</span>
+              <span className="text-xs font-bold text-slate-500">Seller: {seller}</span>
             </div>
           </div>
 
-          {/* Pricing Box in ₹ */}
-          <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+          {/* Pricing Block with ₹ formatting */}
+          <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-black text-slate-900 dark:text-slate-100">
                 {formatCurrency(price)}
               </span>
               {originalPrice > price && (
-                <span className="text-base text-slate-400 line-through font-bold">
-                  {formatCurrency(originalPrice)}
-                </span>
-              )}
-              {discount > 0 && (
-                <span className="text-xs font-black text-rose-600 bg-rose-100 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full ml-auto uppercase">
-                  Save {discount}%
-                </span>
+                <>
+                  <span className="text-sm line-through text-slate-400 font-semibold">
+                    {formatCurrency(originalPrice)}
+                  </span>
+                  <span className="text-xs font-black text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                    {discount || Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
+                  </span>
+                </>
               )}
             </div>
-            <p className="text-[11px] font-semibold text-slate-500">
-              Inclusive of 18% GST ({formatCurrency(gstDetails.totalGst)} CGST+SGST split)
-            </p>
+
+            <div className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+              <FiFileText className="text-indigo-600" />
+              <span>Includes GST Tax Invoice ({formatCurrency(gstDetails.taxAmount)} Tax included)</span>
+            </div>
           </div>
 
-          {/* Indian Bank Offers Box */}
-          <div className="p-4 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
-            <div className="flex items-center gap-2 font-extrabold text-amber-700 dark:text-amber-300">
-              <FiPercent className="w-4 h-4" />
-              <span>Available Bank Offers & Festive Coupons</span>
+          {/* Highlights List */}
+          {highlights && highlights.length > 0 && (
+            <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 space-y-1.5 text-xs">
+              <h4 className="font-extrabold text-indigo-700 dark:text-indigo-300">Key Highlights:</h4>
+              <ul className="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 font-medium">
+                {highlights.map((h, i) => (
+                  <li key={i}>{h}</li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-1 text-slate-700 dark:text-slate-300 font-medium">
-              <li>• <strong>HDFC Credit Card:</strong> 10% Instant Discount up to ₹1,500</li>
-              <li>• <strong>ICICI NetBanking:</strong> Flat ₹500 Cashback on min purchase of ₹3,000</li>
-              <li>• Use coupon code <strong className="text-indigo-600">FESTIVE500</strong> for extra ₹500 Off</li>
-            </ul>
-          </div>
+          )}
 
-          {/* Pincode Delivery Check */}
-          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
-              <FiMapPin className="w-4 h-4 text-indigo-600" />
-              <span>Delivery Pincode Check</span>
+          {/* Description */}
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            {description}
+          </p>
+
+          {/* Quantity Selector & Add to Cart */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-bold text-slate-500">Quantity:</span>
+              <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50 dark:bg-slate-900">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(q - 1, 1))}
+                  className="p-2.5 text-slate-600 hover:text-indigo-600"
+                >
+                  <FiMinus className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-4 text-xs font-black text-slate-900 dark:text-slate-100">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.min(q + 1, stock || 10))}
+                  className="p-2.5 text-slate-600 hover:text-indigo-600"
+                >
+                  <FiPlus className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handlePincodeCheck} className="flex gap-2">
-              <input
-                type="text"
-                maxLength={6}
-                placeholder="Enter 6-digit Pincode"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                className="flex-1 px-3.5 py-2 text-xs font-bold rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button
+                onClick={handleAddToCart}
+                isDisabled={!isStockAvailable}
+                fullWidth
+                size="lg"
+                leftIcon={<FiShoppingCart className="w-5 h-5" />}
               >
-                Check Speed
-              </button>
+                {isStockAvailable ? 'Add to Cart' : 'Out of Stock'}
+              </Button>
+
+              <Button
+                variant={isWishlisted ? 'primary' : 'secondary'}
+                onClick={handleWishlistToggle}
+                fullWidth
+                size="lg"
+                leftIcon={<FiHeart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />}
+              >
+                {isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Delivery & Pincode Checker */}
+          <div className="p-4 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
+            <form onSubmit={handlePincodeCheck} className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="Enter 6-digit Pincode"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-4 py-2.5 pl-9 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                />
+                <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              </div>
+              <Button type="submit" variant="secondary" size="sm">
+                Check
+              </Button>
             </form>
 
             {pincodeStatus && (
-              <p className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                <FiZap className="w-3.5 h-3.5 fill-emerald-600" />
+              <p className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                <FiCheckCircle className="w-4 h-4" />
                 <span>{pincodeStatus}</span>
               </p>
             )}
-          </div>
 
-          {/* Quantity Selector & Action Buttons */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-1">
-              <button
-                onClick={() => setQuantity((q) => Math.max(q - 1, 1))}
-                className="p-2 text-slate-600 hover:text-slate-900"
-              >
-                <FiMinus className="w-4 h-4" />
-              </button>
-              <span className="w-10 text-center text-sm font-black">{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => q + 1)}
-                className="p-2 text-slate-600 hover:text-slate-900"
-              >
-                <FiPlus className="w-4 h-4" />
-              </button>
-            </div>
-
-            <Button
-              size="lg"
-              onClick={handleAddToCart}
-              leftIcon={<FiShoppingCart className="w-5 h-5" />}
-              className="flex-1"
-            >
-              Add to Cart ({formatCurrency(price * quantity)})
-            </Button>
-
-            <button
-              onClick={handleWishlistToggle}
-              className={`p-3.5 rounded-2xl border transition-colors ${
-                isWishlisted
-                  ? 'bg-rose-500 text-white border-rose-500'
-                  : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
-              }`}
-            >
-              <FiHeart className={`w-6 h-6 ${isWishlisted ? 'fill-white' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Frequently Bought Together Bundle */}
-      <div className="p-6 rounded-3xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-4">
-        <div className="flex items-center gap-2 text-indigo-600 font-extrabold text-sm">
-          <FiLayers className="w-5 h-5" />
-          <span>Frequently Bought Together</span>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <img src={product.image} alt={product.name} className="w-14 h-14 object-cover rounded-xl border" />
-            <span className="font-extrabold text-slate-400 text-lg">+</span>
-            <img src={bundleProduct.image} alt={bundleProduct.name} className="w-14 h-14 object-cover rounded-xl border" />
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                {product.name} + {bundleProduct.name}
-              </h4>
-              <p className="text-xs font-black text-indigo-600">
-                Bundle Price: {formatCurrency(price + bundleProduct.price - 200)} (Save ₹200)
-              </p>
+            <div className="grid grid-cols-2 gap-3 pt-2 text-[11px] font-bold text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                <FiTruck className="w-4 h-4 text-indigo-600" />
+                <span>{deliveryTime || deliveryEstimate}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FiShield className="w-4 h-4 text-emerald-600" />
+                <span>{returnPolicy}</span>
+              </div>
             </div>
           </div>
-
-          <button
-            onClick={() => {
-              addToCart(product);
-              addToCart(bundleProduct);
-            }}
-            className="px-4 py-2 rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-xs font-bold shadow-md shrink-0"
-          >
-            Add Both to Cart
-          </button>
         </div>
       </div>
 
       {/* Tabs: Specifications & Customer Reviews */}
-      <div className="pt-6">
-        <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 mb-6">
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-8 space-y-6">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6 text-sm font-black">
           <button
             onClick={() => setActiveTab('specs')}
-            className={`pb-3 text-sm font-extrabold transition-colors relative ${
-              activeTab === 'specs' ? 'text-indigo-600' : 'text-slate-500'
+            className={`pb-3 transition-colors border-b-2 ${
+              activeTab === 'specs'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}
           >
-            <span>Product Specifications</span>
+            Technical Specifications
           </button>
-
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`pb-3 text-sm font-extrabold transition-colors relative ${
-              activeTab === 'reviews' ? 'text-indigo-600' : 'text-slate-500'
+            className={`pb-3 transition-colors border-b-2 ${
+              activeTab === 'reviews'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}
           >
-            <span>Verified Customer Reviews ({mockReviews.length})</span>
+            Customer Reviews ({reviewsCount || numReviews})
           </button>
         </div>
 
-        {activeTab === 'specs' && (
-          <div className="max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 mb-4">
-              Technical Details & Warranty
-            </h3>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {Object.entries(specs).map(([key, val]) => (
-                <div key={key} className="py-3 flex justify-between text-xs">
-                  <span className="font-bold text-slate-500">{key}</span>
-                  <span className="font-black text-slate-900 dark:text-slate-100">{val}</span>
+        {activeTab === 'specs' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
+            {Object.keys(mergedSpecs).length > 0 ? (
+              Object.entries(mergedSpecs).map(([key, val]) => (
+                <div key={key} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex justify-between text-xs">
+                  <span className="font-extrabold text-slate-500">{key}:</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{String(val)}</span>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="p-4 text-xs font-bold text-slate-500">
+                Standard {brand} Warranty ({warranty}) with verified GST invoice details.
+              </div>
+            )}
           </div>
-        )}
-
-        {activeTab === 'reviews' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        ) : (
+          <div className="space-y-4 max-w-3xl">
             {mockReviews.map((rev) => (
               <ReviewCard key={rev.id} review={rev} />
             ))}
@@ -331,14 +392,14 @@ const ProductDetails = () => {
         )}
       </div>
 
-      {/* Recommended Products */}
+      {/* Related Products Grid */}
       {relatedProducts.length > 0 && (
-        <section className="pt-8 border-t border-slate-200 dark:border-slate-800">
-          <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight mb-6">
-            Recommended Products
-          </h2>
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-8 space-y-4">
+          <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">
+            Similar Products You Might Like
+          </h3>
           <ProductGrid products={relatedProducts} />
-        </section>
+        </div>
       )}
     </motion.div>
   );

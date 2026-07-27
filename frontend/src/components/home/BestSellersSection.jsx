@@ -1,11 +1,29 @@
+import { useState, useEffect } from 'react';
 import ProductCard from '../product/ProductCard';
-import { products } from '../../data/products';
+import { products as fallbackProducts } from '../../data/products';
+import { fetchBestSellers } from '../../services/productService';
 
 /**
- * BestSellersSection Component
+ * BestSellersSection Component - Connected to API
  */
 const BestSellersSection = () => {
-  const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 4);
+  const [bestSellers, setBestSellers] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetchBestSellers(4);
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setBestSellers(res.data);
+        } else {
+          setBestSellers(fallbackProducts.filter((p) => p.isBestSeller).slice(0, 4));
+        }
+      } catch (err) {
+        setBestSellers(fallbackProducts.filter((p) => p.isBestSeller).slice(0, 4));
+      }
+    };
+    load();
+  }, []);
 
   return (
     <section className="py-12">
@@ -21,7 +39,7 @@ const BestSellersSection = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {bestSellers.map((product) => (
+        {(bestSellers.length > 0 ? bestSellers : fallbackProducts.slice(0, 4)).map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}
       </div>

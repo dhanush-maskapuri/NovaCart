@@ -1,30 +1,33 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiFilter, FiX, FiSliders, FiChevronDown, FiGrid, FiList, FiCheckCircle } from 'react-icons/fi';
+import { FiFilter, FiX, FiSliders, FiChevronDown, FiGrid, FiList, FiCheckCircle, FiRefreshCw } from 'react-icons/fi';
 import SearchBar from '../components/search/SearchBar';
 import ProductFilter from '../components/product/ProductFilter';
 import ProductGrid from '../components/product/ProductGrid';
 import ProductCompareModal from '../components/product/ProductCompareModal';
 import Button from '../components/common/Button';
+import Loader from '../components/common/Loader';
 import { products as initialProducts } from '../data/products';
 import { categories } from '../data/categories';
+import { fetchProducts } from '../services/productService';
 import { fadeIn } from '../animations/variants';
-import { formatCurrency } from '../utils/formatters';
 
 /**
- * Shop Page Component - Redesigned for Indian Marketplace
- * Features Price Slider in ₹, Indian Brand Filters, Express Delivery filter,
- * Product Comparison Drawer, Grid/List views, and Search Synchronization.
+ * Shop Page Component - Live API Connected
  */
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || 'all';
   const searchParam = searchParams.get('search') || '';
 
+  const [apiProducts, setApiProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [searchQuery, setSearchQuery] = useState(searchParam);
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
-  const [priceRange, setPriceRange] = useState([0, 150000]);
+  const [priceRange, setPriceRange] = useState([0, 200000]);
   const [selectedRating, setSelectedRating] = useState(0);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [expressOnly, setExpressOnly] = useState(false);
@@ -35,10 +38,47 @@ const Shop = () => {
   const [compareList, setCompareList] = useState([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
 
+  // Sync state with URL params
   useEffect(() => {
     if (categoryParam) setSelectedCategory(categoryParam);
     if (searchParam) setSearchQuery(searchParam);
   }, [categoryParam, searchParam]);
+
+  // Load live products from Backend API
+  const loadProductsFromApi = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const queryParams = {
+        keyword: searchQuery || undefined,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+        maxPrice: priceRange[1] < 200000 ? priceRange[1] : undefined,
+        minRating: selectedRating > 0 ? selectedRating : undefined,
+        inStockOnly: inStockOnly || undefined,
+        expressOnly: expressOnly || undefined,
+        brands: selectedBrands.length > 0 ? selectedBrands.join(',') : undefined,
+        sort: sortBy,
+        limit: 100,
+      };
+
+      const res = await fetchProducts(queryParams);
+      if (res && res.success && Array.isArray(res.data?.products)) {
+        setApiProducts(res.data.products);
+      } else {
+        setApiProducts(initialProducts);
+      }
+    } catch (err) {
+      console.warn('Backend API connection failed, using local dataset fallback:', err);
+      setApiProducts(initialProducts);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, selectedCategory, priceRange, selectedRating, inStockOnly, expressOnly, selectedBrands, sortBy]);
+
+  useEffect(() => {
+    loadProductsFromApi();
+  }, [loadProductsFromApi]);
 
   const handleCategoryChange = (cat) => {
     setSelectedCategory(cat);
@@ -73,7 +113,7 @@ const Shop = () => {
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedCategory('all');
-    setPriceRange([0, 150000]);
+    setPriceRange([0, 200000]);
     setSelectedRating(0);
     setInStockOnly(false);
     setExpressOnly(false);
@@ -85,9 +125,11 @@ const Shop = () => {
     setSearchParams(searchParams);
   };
 
-  // Filter & Sort Logic
+  // Filter & Sort Logic on active product list
   const filteredProducts = useMemo(() => {
-    return initialProducts
+    const dataSource = apiProducts.length > 0 ? apiProducts : initialProducts;
+
+    return dataSource
       .filter((product) => {
         if (
           searchQuery &&
@@ -100,8 +142,7 @@ const Shop = () => {
 
         if (
           selectedCategory !== 'all' &&
-          product.category.toLowerCase() !== selectedCategory.toLowerCase() &&
-          product.hub !== selectedCategory.toLowerCase()
+          product.category.toLowerCase() !== selectedCategory.toLowerCase()
         ) {
           return false;
         }
@@ -114,11 +155,11 @@ const Shop = () => {
           return false;
         }
 
-        if (inStockOnly && !product.inStock) {
+        if (inStockOnly && (product.stock === 0 || product.status === 'out_of_stock')) {
           return false;
         }
 
-        if (expressOnly && !product.deliveryTime?.includes('10 Mins')) {
+        if (expressOnly && !product.deliveryTime?.includes('10 Mins') && !product.deliveryEstimate?.includes('10 Mins')) {
           return false;
         }
 
@@ -132,11 +173,12 @@ const Shop = () => {
         if (sortBy === 'price-low') return a.price - b.price;
         if (sortBy === 'price-high') return b.price - a.price;
         if (sortBy === 'rating') return b.rating - a.rating;
-        if (sortBy === 'discount') return b.discount - a.discount;
-        if (sortBy === 'newest') return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
+        if (sortBy === 'discount') return (b.discount || 0) - (a.discount || 0);
+        if (sortBy === 'newest') return (b.isNewArrival || b.isNew ? 1 : 0) - (a.isNewArrival || a.isNew ? 1 : 0);
         return 0;
       });
   }, [
+    apiProducts,
     searchQuery,
     selectedCategory,
     priceRange,
@@ -279,14 +321,20 @@ const Shop = () => {
             </div>
           )}
 
-          {/* Product Grid Display */}
-          <ProductGrid
-            products={paginatedProducts}
-            onCompareToggle={handleCompareToggle}
-            compareList={compareList}
-            emptyTitle="No matching products found in Indian catalog"
-            emptyMessage="Try resetting filters or searching for terms like boAt, Apple, or Groceries."
-          />
+          {/* Product Grid Display or Skeleton Loading */}
+          {loading ? (
+            <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-500">
+              <Loader message="Loading products from NovaCart API..." />
+            </div>
+          ) : (
+            <ProductGrid
+              products={paginatedProducts}
+              onCompareToggle={handleCompareToggle}
+              compareList={compareList}
+              emptyTitle="No matching products found in Indian catalog"
+              emptyMessage="Try resetting filters or searching for terms like boAt, Apple, or Groceries."
+            />
+          )}
 
           {/* Pagination UI */}
           {totalPages > 1 && (

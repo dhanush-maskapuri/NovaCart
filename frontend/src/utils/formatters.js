@@ -25,14 +25,13 @@ export const formatDate = (dateString) => {
 };
 
 /**
- * Calculate Indian GST breakdown (Standard 18%)
+ * Calculate Indian GST breakdown (Standard 18% inclusive)
  * @param {number} totalAmount
  * @returns {object} Base price, CGST (9%), SGST (9%), Total GST
  */
 export const calculateGST = (totalAmount = 0) => {
   const numericVal = Number(totalAmount || 0);
-  const gstRate = 0.18; // 18% GST
-  const basePrice = Math.round(numericVal / (1 + gstRate));
+  const basePrice = Math.round((numericVal * 100) / 118);
   const totalGst = numericVal - basePrice;
   const cgst = Math.round(totalGst / 2);
   const sgst = totalGst - cgst;
@@ -51,5 +50,15 @@ export const calculateGST = (totalAmount = 0) => {
  * @returns {boolean}
  */
 export const isValidPincode = (pincode) => {
-  return /^[1-9][0-9]{5}$/.test(pincode);
+  return /^[1-9][0-9]{5}$/.test(String(pincode).trim());
+};
+
+/**
+ * Validate 10-digit Indian Mobile Number
+ * @param {string} phone
+ * @returns {boolean}
+ */
+export const isValidPhone = (phone) => {
+  const cleanPhone = String(phone || '').replace(/\D/g, '');
+  return /^[6-9]\d{9}$/.test(cleanPhone);
 };

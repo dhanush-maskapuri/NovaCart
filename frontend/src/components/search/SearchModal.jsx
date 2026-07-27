@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiMic, FiX, FiClock, FiTrendingUp, FiChevronRight, FiZap } from 'react-icons/fi';
 import { products } from '../../data/products';
+import { fetchSearchSuggestions } from '../../services/productService';
 import { SEARCH_SUGGESTIONS } from '../../utils/constants';
 import { formatCurrency } from '../../utils/formatters';
 
 /**
- * SearchModal Component - Voice Search & Instant Search Overlay
+ * SearchModal Component - Voice Search & Instant Backend API Search Overlay
  */
 const SearchModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
@@ -21,14 +24,47 @@ const SearchModal = ({ isOpen, onClose }) => {
     }
   });
 
-  const searchResults = query.trim()
-    ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.category.toLowerCase().includes(query.toLowerCase()) ||
-          p.brand.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6)
-    : [];
+  // Debounced API call for instant search suggestions
+  useEffect(() => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetchSearchSuggestions(query);
+        if (res && res.success && Array.isArray(res.data)) {
+          setSearchResults(res.data);
+        } else {
+          // Local fallback
+          setSearchResults(
+            products.filter(
+              (p) =>
+                p.name.toLowerCase().includes(query.toLowerCase()) ||
+                p.category.toLowerCase().includes(query.toLowerCase()) ||
+                p.brand.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 6)
+          );
+        }
+      } catch (err) {
+        // Fallback to dataset filter
+        setSearchResults(
+          products.filter(
+            (p) =>
+              p.name.toLowerCase().includes(query.toLowerCase()) ||
+              p.category.toLowerCase().includes(query.toLowerCase()) ||
+              p.brand.toLowerCase().includes(query.toLowerCase())
+          ).slice(0, 6)
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const handleSelectQuery = (term) => {
     setQuery(term);
@@ -106,31 +142,47 @@ const SearchModal = ({ isOpen, onClose }) => {
           {/* Live Search Results Auto-Complete */}
           {query.trim() && (
             <div className="space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                Matching Products ({searchResults.length})
-              </span>
-              <div className="divide-y divide-slate-800 border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/60">
-                {searchResults.map((prod) => (
-                  <div
-                    key={prod._id}
-                    onClick={() => {
-                      saveRecent(prod.name);
-                      navigate(`/product/${prod._id}`);
-                      onClose();
-                    }}
-                    className="p-3 flex items-center justify-between hover:bg-slate-800/80 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img src={prod.image} alt={prod.name} className="w-10 h-10 object-cover rounded-xl border border-slate-700" />
-                      <div>
-                        <h5 className="text-xs font-extrabold text-white line-clamp-1">{prod.name}</h5>
-                        <span className="text-[10px] font-bold text-amber-400">{prod.deliveryTime}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-black text-emerald-400">{formatCurrency(prod.price)}</span>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <span>Matching Products ({searchResults.length})</span>
+                {loading && <span className="text-indigo-400 animate-pulse">Searching...</span>}
               </div>
+
+              {searchResults.length > 0 ? (
+                <div className="divide-y divide-slate-800 border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/60">
+                  {searchResults.map((prod) => (
+                    <div
+                      key={prod._id}
+                      onClick={() => {
+                        saveRecent(prod.name);
+                        navigate(`/product/${prod._id}`);
+                        onClose();
+                      }}
+                      className="p-3 flex items-center justify-between hover:bg-slate-800/80 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={prod.image || (prod.images && prod.images[0]?.url) || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'}
+                          alt={prod.name}
+                          className="w-10 h-10 object-cover rounded-xl border border-slate-700"
+                        />
+                        <div>
+                          <h5 className="text-xs font-extrabold text-white line-clamp-1">{prod.name}</h5>
+                          <span className="text-[10px] font-bold text-amber-400">
+                            {prod.deliveryTime || prod.deliveryEstimate || '10 Mins Express'}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-emerald-400">{formatCurrency(prod.price)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                !loading && (
+                  <div className="p-6 text-center text-xs font-bold text-slate-500 rounded-2xl bg-slate-950 border border-slate-800">
+                    No products found matching "{query}". Try searching for boAt, Apple, or Groceries.
+                  </div>
+                )
+              )}
             </div>
           )}
 

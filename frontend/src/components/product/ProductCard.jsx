@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiShoppingCart, FiHeart, FiEye, FiZap, FiCheck } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiEye, FiZap, FiCheck, FiAlertTriangle, FiArrowRight } from 'react-icons/fi';
 import Rating from './Rating';
 import ProductQuickViewModal from './ProductQuickViewModal';
 import { useCart } from '../../hooks/useCart';
@@ -9,11 +9,10 @@ import { useWishlist } from '../../hooks/useWishlist';
 import { formatCurrency } from '../../utils/formatters';
 
 /**
- * ProductCard Component - Apple + Blinkit Inspired Aesthetics
- * Features Indian Rupee pricing, delivery speed tag, GST badge, compare launcher,
- * Framer Motion hover animations, wishlist toggle, and quick view modal.
+ * ProductCard Component - 4-Tier Stock System & Buy Now Action
  */
 const ProductCard = ({ product, onCompareToggle, isCompared }) => {
+  const navigate = useNavigate();
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -31,12 +30,47 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
     rating = 4.8,
     reviewsCount = 42,
     image,
+    images = [],
     isNew,
     isBestSeller,
-    deliveryTime = 'Tomorrow Delivery',
+    stock = 10,
+    status,
+    deliveryTime = '10 Mins Express',
   } = product;
 
+  const displayImage = image || (images && images[0]?.url) || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80';
   const isWishlisted = isInWishlist(_id);
+  const isAvailable = stock > 0 && status !== 'out_of_stock';
+
+  // Determine Stock Badge (4 Tiers)
+  const getStockBadge = () => {
+    if (!isAvailable) {
+      return (
+        <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider">
+          <FiAlertTriangle className="w-2.5 h-2.5" /> Out of Stock
+        </span>
+      );
+    }
+    if (stock <= 5) {
+      return (
+        <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1">
+          🔥 Low Stock! Only {stock} Left
+        </span>
+      );
+    }
+    if (stock <= 15) {
+      return (
+        <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md">
+          Limited Stock
+        </span>
+      );
+    }
+    return (
+      <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
+        Available
+      </span>
+    );
+  };
 
   const handleWishlistToggle = (e) => {
     e.preventDefault();
@@ -51,7 +85,18 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product);
+    if (isAvailable) {
+      addToCart(product);
+    }
+  };
+
+  const handleBuyNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isAvailable) {
+      addToCart(product, 1);
+      navigate('/checkout');
+    }
   };
 
   const handleQuickView = (e) => {
@@ -71,7 +116,7 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
         <div className="relative aspect-square w-full bg-slate-100 dark:bg-slate-950/60 overflow-hidden">
           <Link to={`/product/${_id}`} className="block w-full h-full">
             <img
-              src={image}
+              src={displayImage}
               alt={name}
               className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
             />
@@ -84,11 +129,7 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
                 {discount}% OFF
               </span>
             )}
-            {deliveryTime && (
-              <span className="bg-amber-400 text-slate-950 text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1">
-                <FiZap className="w-2.5 h-2.5 fill-slate-950" /> {deliveryTime}
-              </span>
-            )}
+            {getStockBadge()}
             {isNew && (
               <span className="bg-emerald-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider">
                 NEW
@@ -128,7 +169,7 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
             </motion.button>
           </div>
 
-          {/* Optional Compare Checkbox Overlay */}
+          {/* Compare Checkbox Overlay */}
           {onCompareToggle && (
             <div className="absolute bottom-2 left-3 z-10">
               <button
@@ -161,7 +202,7 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
             </div>
 
             <Link to={`/product/${_id}`}>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
                 {name}
               </h3>
             </Link>
@@ -171,8 +212,9 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
-            <div className="flex flex-col">
+          {/* Price & Buy Now / Add to Cart Controls */}
+          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-baseline gap-1.5 justify-between">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
                   {formatCurrency(price)}
@@ -183,19 +225,41 @@ const ProductCard = ({ product, onCompareToggle, isCompared }) => {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-semibold text-emerald-600">Incl. all taxes</span>
+              <span className="text-[10px] font-bold text-emerald-600">Incl. GST</span>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={handleAddToCart}
-              aria-label="Add to cart"
-              className="px-3.5 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5"
-            >
-              <FiShoppingCart className="w-3.5 h-3.5" />
-              <span>Add</span>
-            </motion.button>
+            {/* Action Buttons Row */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleAddToCart}
+                disabled={!isAvailable}
+                className={`py-2 px-3 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
+                  isAvailable
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <FiShoppingCart className="w-3.5 h-3.5" />
+                <span>Add</span>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBuyNow}
+                disabled={!isAvailable}
+                className={`py-2 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1 ${
+                  isAvailable
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <span>Buy Now</span>
+                <FiArrowRight className="w-3.5 h-3.5" />
+              </motion.button>
+            </div>
           </div>
         </div>
       </motion.div>

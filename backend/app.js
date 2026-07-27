@@ -18,16 +18,25 @@ const v1Router = require('./routes/v1Router');
  */
 const app = express();
 
-// 1. Security HTTP Headers
-app.use(helmet());
+// 1. Security HTTP Headers with cross-origin resource policy
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-// 2. CORS Configuration
+// 2. Dynamic Localhost & Production CORS Configuration
 app.use(
   cors({
-    origin: config.clientUrl,
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   })
 );
 

@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
+import { RecentlyViewedProvider } from './context/RecentlyViewedContext';
 import AppRoutes from './routes/AppRoutes';
 
 /**
@@ -15,9 +16,11 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
+            <RecentlyViewedProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </RecentlyViewedProvider>
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
@@ -26,4 +29,3 @@ function App() {
 }
 
 export default App;
-

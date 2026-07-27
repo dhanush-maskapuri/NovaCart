@@ -5,16 +5,17 @@ import Button from '../common/Button';
 import Rating from './Rating';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
-import { formatCurrency } from '../../utils/formatters';
+import { usePreferences } from '../../context/PreferencesContext';
 
 /**
  * ProductQuickViewModal Component
- * Interactive modal overlay previewing key product details and quick actions.
+ * Interactive modal overlay previewing key product details and quick actions with live currency conversion.
  */
 const ProductQuickViewModal = ({ isOpen, onClose, product }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { formatPrice } = usePreferences();
 
   if (!product) return null;
 
@@ -101,9 +102,9 @@ const ProductQuickViewModal = ({ isOpen, onClose, product }) => {
           <Rating rating={rating} reviewsCount={reviewsCount} />
 
           <div className="flex items-baseline gap-3 my-1">
-            <span className="text-2xl font-black text-slate-900 dark:text-slate-100">{formatCurrency(price)}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-slate-100">{formatPrice(price)}</span>
             {originalPrice > price && (
-              <span className="text-sm text-slate-400 line-through font-semibold">{formatCurrency(originalPrice)}</span>
+              <span className="text-sm text-slate-400 line-through font-semibold">{formatPrice(originalPrice)}</span>
             )}
           </div>
 

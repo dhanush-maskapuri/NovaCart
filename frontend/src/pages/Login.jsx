@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiSmartphone, FiShield } from 'react-icons/fi';
+import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import { FaGoogle, FaApple } from 'react-icons/fa';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import ForgotPasswordModal from '../components/common/ForgotPasswordModal';
 import { useAuth } from '../hooks/useAuth';
+import { googleLoginApi, appleLoginApi } from '../services/authService';
 import { fadeIn } from '../animations/variants';
 import { APP_NAME, APP_TAGLINE } from '../utils/constants';
 
 /**
  * Login Page Component - NOVACART
- * Email & OTP Tabbed Authentication, Show Password Toggle, Google/Apple UI.
+ * Email & OTP Tabbed Authentication with Google & Apple OAuth Social Logins.
  */
 const Login = () => {
   const navigate = useNavigate();
@@ -32,6 +33,36 @@ const Login = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const redirectPath = location.state?.from?.pathname || '/profile';
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    try {
+      const res = await googleLoginApi({ name: 'Rahul Sharma', email: 'rahul.google@novacart.in' });
+      if (res && res.success && res.data) {
+        localStorage.setItem('novacart_token', res.data.token);
+        localStorage.setItem('token', res.data.token);
+        setUser(res.data.user);
+        navigate(redirectPath, { replace: true });
+      }
+    } catch (err) {
+      setError(err.message || 'Google Login failed');
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setError('');
+    try {
+      const res = await appleLoginApi({ name: 'Rahul Sharma', email: 'rahul.apple@novacart.in' });
+      if (res && res.success && res.data) {
+        localStorage.setItem('novacart_token', res.data.token);
+        localStorage.setItem('token', res.data.token);
+        setUser(res.data.user);
+        navigate(redirectPath, { replace: true });
+      }
+    } catch (err) {
+      setError(err.message || 'Apple Login failed');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,10 +162,7 @@ const Login = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => {
-              setUser({ name: 'Rahul Sharma', email: 'rahul.google@novacart.in', role: 'customer' });
-              navigate('/shop');
-            }}
+            onClick={handleGoogleLogin}
             className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <FaGoogle className="w-4 h-4 text-red-500" />
@@ -142,10 +170,7 @@ const Login = () => {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setUser({ name: 'Rahul Sharma', email: 'rahul.apple@novacart.in', role: 'customer' });
-              navigate('/shop');
-            }}
+            onClick={handleAppleLogin}
             className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <FaApple className="w-4 h-4" />
@@ -253,7 +278,7 @@ const Login = () => {
             </div>
           )}
 
-          <Button type="submit" fullWidth rightIcon={<FiArrowRight className="w-4 h-4" />}>
+          <Button type="submit" fullWidth disabled={submitting}>
             {authMode === 'email' ? 'Sign In to NOVACART' : otpSent ? 'Verify OTP & Login' : 'Send OTP Code'}
           </Button>
         </form>
@@ -280,7 +305,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
         onClose={() => setIsForgotModalOpen(false)}

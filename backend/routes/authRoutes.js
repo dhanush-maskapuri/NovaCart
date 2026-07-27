@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   registerUser,
   loginUser,
+  googleLogin,
+  appleLogin,
   logoutUser,
   getMe,
   updateUserProfile,
@@ -19,12 +21,13 @@ const {
   validateForgotPasswordInput,
   validateResetPasswordInput,
   validateProfileUpdateInput,
-  validateChangePasswordInput,
 } = require('../validators/authValidator');
 
 // Public routes
 router.post('/register', validateRequest(validateRegisterInput), registerUser);
 router.post('/login', validateRequest(validateLoginInput), loginUser);
+router.post('/google', googleLogin);
+router.post('/apple', appleLogin);
 router.post('/refresh-token', refreshToken);
 router.post('/forgot-password', validateRequest(validateForgotPasswordInput), forgotPassword);
 router.post('/reset-password', validateRequest(validateResetPasswordInput), resetPassword);
@@ -35,6 +38,6 @@ router.post('/logout', logoutUser);
 router.get('/me', getMe);
 router.get('/profile', getMe);
 router.put('/profile', validateRequest(validateProfileUpdateInput), updateUserProfile);
-router.put('/change-password', validateRequest(validateChangePasswordInput), changePassword);
+router.put('/change-password', changePassword);
 
 module.exports = router;

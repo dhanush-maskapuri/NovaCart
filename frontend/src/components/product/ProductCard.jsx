@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiShoppingCart, FiHeart, FiEye, FiCheck, FiAlertTriangle, FiArrowRight, FiLayers } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiEye, FiAlertTriangle, FiArrowRight, FiLayers } from 'react-icons/fi';
 import Rating from './Rating';
 import ProductQuickViewModal from './ProductQuickViewModal';
 import EcoScoreBadge from './EcoScoreBadge';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
 import { useCompare } from '../../context/CompareContext';
-import { formatCurrency } from '../../utils/formatters';
+import { usePreferences } from '../../context/PreferencesContext';
 
 /**
- * ProductCard Component - Integrated with Compare Drawer & Sustainability Eco-Score
+ * ProductCard Component - Integrated with Live Dynamic Currency & i18n
  */
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCompare, removeFromCompare, isInCompare } = useCompare();
+  const { formatPrice, t } = usePreferences();
 
   if (!product) return null;
 
@@ -34,7 +35,6 @@ const ProductCard = ({ product }) => {
     reviewsCount = 42,
     image,
     images = [],
-    isNew,
     isBestSeller,
     stock = 10,
     status,
@@ -49,7 +49,7 @@ const ProductCard = ({ product }) => {
     if (!isAvailable) {
       return (
         <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider">
-          <FiAlertTriangle className="w-2.5 h-2.5" /> Out of Stock
+          <FiAlertTriangle className="w-2.5 h-2.5" /> {t('out_of_stock')}
         </span>
       );
     }
@@ -62,7 +62,7 @@ const ProductCard = ({ product }) => {
     }
     return (
       <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-md">
-        Available
+        {t('in_stock')}
       </span>
     );
   };
@@ -198,15 +198,15 @@ const ProductCard = ({ product }) => {
             <div className="flex items-baseline gap-1.5 justify-between">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                  {formatCurrency(price)}
+                  {formatPrice(price)}
                 </span>
                 {originalPrice > price && (
                   <span className="text-xs text-slate-400 line-through font-medium">
-                    {formatCurrency(originalPrice)}
+                    {formatPrice(originalPrice)}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-bold text-emerald-600">Incl. GST</span>
+              <span className="text-[10px] font-bold text-emerald-600">{t('gst_inclusive')}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
@@ -222,7 +222,7 @@ const ProductCard = ({ product }) => {
                 }`}
               >
                 <FiShoppingCart className="w-3.5 h-3.5" />
-                <span>Add</span>
+                <span>{t('add_to_cart')}</span>
               </motion.button>
 
               <motion.button
@@ -236,7 +236,7 @@ const ProductCard = ({ product }) => {
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                <span>Buy Now</span>
+                <span>{t('buy_now')}</span>
                 <FiArrowRight className="w-3.5 h-3.5" />
               </motion.button>
             </div>

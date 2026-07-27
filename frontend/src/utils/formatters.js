@@ -1,13 +1,25 @@
-import { CURRENCY } from './constants';
+export const CURRENCY = '₹';
+
+export const CURRENCY_RATES = {
+  'INR (₹)': { rate: 1, symbol: '₹' },
+  'USD ($)': { rate: 0.012, symbol: '$' },
+  'EUR (€)': { rate: 0.011, symbol: '€' },
+  'GBP (£)': { rate: 0.0095, symbol: '£' },
+  'JPY (¥)': { rate: 1.78, symbol: '¥' },
+  'AED (DH)': { rate: 0.044, symbol: 'AED ' },
+};
 
 /**
- * Format raw number into Indian currency format (e.g., ₹1,49,999)
- * @param {number} amount
+ * Format raw number into dynamic currency format (e.g. ₹1,49,999, $1,799.98)
+ * @param {number} amountInINR
+ * @param {string} currencyStr
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (amount) => {
-  const numericVal = Number(amount || 0);
-  return `${CURRENCY}${numericVal.toLocaleString('en-IN')}`;
+export const formatCurrency = (amountInINR, currencyStr = 'INR (₹)') => {
+  const numericVal = Number(amountInINR || 0);
+  const curr = CURRENCY_RATES[currencyStr] || CURRENCY_RATES['INR (₹)'];
+  const converted = Math.round(numericVal * curr.rate);
+  return `${curr.symbol}${converted.toLocaleString()}`;
 };
 
 /**
@@ -41,6 +53,7 @@ export const calculateGST = (totalAmount = 0) => {
     cgst,
     sgst,
     totalGst,
+    taxableAmount: basePrice,
   };
 };
 

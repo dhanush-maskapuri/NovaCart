@@ -10,7 +10,7 @@ const COOKIE_OPTIONS = {
 };
 
 // @desc    Register a new user
-// @route   POST /api/auth/register
+// @route   POST /api/v1/auth/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
   const result = await authService.register(req.body);
@@ -19,7 +19,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 // @desc    Authenticate user & get tokens
-// @route   POST /api/auth/login
+// @route   POST /api/v1/auth/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
   const result = await authService.login(req.body);
@@ -27,8 +27,26 @@ const loginUser = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, 'Login successful', result, 200);
 });
 
+// @desc    Google OAuth login/register
+// @route   POST /api/v1/auth/google
+// @access  Public
+const googleLogin = asyncHandler(async (req, res) => {
+  const result = await authService.googleAuth(req.body);
+  res.cookie('refreshToken', result.refreshToken, COOKIE_OPTIONS);
+  return ApiResponse.success(res, 'Google authentication successful', result, 200);
+});
+
+// @desc    Apple OAuth login/register
+// @route   POST /api/v1/auth/apple
+// @access  Public
+const appleLogin = asyncHandler(async (req, res) => {
+  const result = await authService.appleAuth(req.body);
+  res.cookie('refreshToken', result.refreshToken, COOKIE_OPTIONS);
+  return ApiResponse.success(res, 'Apple authentication successful', result, 200);
+});
+
 // @desc    Logout user & clear cookie
-// @route   POST /api/auth/logout
+// @route   POST /api/v1/auth/logout
 // @access  Private
 const logoutUser = asyncHandler(async (req, res) => {
   const userId = req.user ? (req.user.id || req.user._id) : null;
@@ -38,7 +56,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get current authenticated user profile
-// @route   GET /api/auth/me, GET /api/auth/profile
+// @route   GET /api/v1/auth/me, GET /api/v1/auth/profile
 // @access  Private
 const getMe = asyncHandler(async (req, res) => {
   const userId = req.user.id || req.user._id;
@@ -47,7 +65,7 @@ const getMe = asyncHandler(async (req, res) => {
 });
 
 // @desc    Update user profile details
-// @route   PUT /api/auth/profile
+// @route   PUT /api/v1/auth/profile
 // @access  Private
 const updateUserProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id || req.user._id;
@@ -56,7 +74,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 });
 
 // @desc    Change user password
-// @route   PUT /api/auth/change-password
+// @route   PUT /api/v1/auth/change-password
 // @access  Private
 const changePassword = asyncHandler(async (req, res) => {
   const userId = req.user.id || req.user._id;
@@ -65,7 +83,7 @@ const changePassword = asyncHandler(async (req, res) => {
 });
 
 // @desc    Refresh access token using refresh token cookie or body
-// @route   POST /api/auth/refresh-token
+// @route   POST /api/v1/auth/refresh-token
 // @access  Public
 const refreshToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
@@ -75,7 +93,7 @@ const refreshToken = asyncHandler(async (req, res) => {
 });
 
 // @desc    Request password reset email / token
-// @route   POST /api/auth/forgot-password
+// @route   POST /api/v1/auth/forgot-password
 // @access  Public
 const forgotPassword = asyncHandler(async (req, res) => {
   const result = await authService.forgotPassword(req.body.email);
@@ -83,7 +101,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 });
 
 // @desc    Reset password using reset token
-// @route   POST /api/auth/reset-password
+// @route   POST /api/v1/auth/reset-password
 // @access  Public
 const resetPassword = asyncHandler(async (req, res) => {
   const { token, newPassword } = req.body;
@@ -94,6 +112,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  googleLogin,
+  appleLogin,
   logoutUser,
   getMe,
   getUserProfile: getMe,

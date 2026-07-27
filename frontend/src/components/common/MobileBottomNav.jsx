@@ -1,53 +1,56 @@
-import { NavLink } from 'react-router-dom';
-import { FiHome, FiGrid, FiZap, FiCpu, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { Link, useLocation } from 'react-router-dom';
+import { FiHome, FiGrid, FiCpu, FiShoppingCart, FiUser } from 'react-icons/fi';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
 
-/**
- * MobileBottomNav Component - Sticky Bottom Bar for Mobile Devices
- */
 const MobileBottomNav = () => {
-  const { cart = [] } = useCart();
-  const totalCartItems = cart.reduce((acc, item) => acc + (item.quantity || 1), 0);
+  const location = useLocation();
+  const { totalItems } = useCart();
+  const { isAuthenticated } = useAuth();
 
-  const navs = [
-    { label: 'Home', path: '/', icon: FiHome, end: true },
-    { label: 'Shop', path: '/shop', icon: FiGrid },
-    { label: '10-Min', path: '/shop?category=groceries', icon: FiZap },
-    { label: 'AI Shopping', path: '/ai-assistant', icon: FiCpu },
-    { label: 'Cart', path: '/cart', icon: FiShoppingCart, badge: totalCartItems },
-    { label: 'Profile', path: '/profile', icon: FiUser },
+  const navItems = [
+    { label: 'Home', path: '/', icon: <FiHome className="w-5 h-5" /> },
+    { label: 'Shop', path: '/shop', icon: <FiGrid className="w-5 h-5" /> },
+    { label: 'AI Guide', path: '/ai-assistant', icon: <FiCpu className="w-5 h-5 animate-pulse text-indigo-500" /> },
+    {
+      label: 'Cart',
+      path: '/cart',
+      icon: (
+        <div className="relative">
+          <FiShoppingCart className="w-5 h-5" />
+          {totalItems > 0 && (
+            <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+              {totalItems > 9 ? '9+' : totalItems}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      label: 'Account',
+      path: isAuthenticated ? '/dashboard' : '/login',
+      icon: <FiUser className="w-5 h-5" />,
+    },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 lg:hidden px-2 py-2 flex items-center justify-around shadow-2xl">
-      {navs.map((n) => {
-        const Icon = n.icon;
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-2 px-3 flex items-center justify-around text-[10px] font-black text-slate-500 dark:text-slate-400">
+      {navItems.map((item) => {
+        const isActive = location.pathname === item.path;
         return (
-          <NavLink
-            key={n.path}
-            to={n.path}
-            end={n.end}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-[10px] font-bold transition-all relative ${
-                isActive
-                  ? 'text-amber-400 font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`
-            }
+          <Link
+            key={item.label}
+            to={item.path}
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              isActive ? 'text-indigo-600 dark:text-indigo-400 font-extrabold' : 'hover:text-slate-900 dark:hover:text-slate-100'
+            }`}
           >
-            <div className="relative">
-              <Icon className="w-5 h-5" />
-              {n.badge > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                  {n.badge}
-                </span>
-              )}
-            </div>
-            <span>{n.label}</span>
-          </NavLink>
+            {item.icon}
+            <span>{item.label}</span>
+          </Link>
         );
       })}
-    </nav>
+    </div>
   );
 };
 

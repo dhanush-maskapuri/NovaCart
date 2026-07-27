@@ -12,6 +12,7 @@ import Register from '../pages/Register';
 import ResetPassword from '../pages/ResetPassword';
 import Profile from '../pages/Profile';
 import Orders from '../pages/Orders';
+import Preferences from '../pages/Preferences';
 import AIAssistantPage from '../pages/AIAssistantPage';
 import NotFound from '../pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
@@ -27,7 +28,7 @@ import AdminUsers from '../pages/admin/Users';
 import AdminReviews from '../pages/admin/Reviews';
 
 /**
- * AppRoutes Component - NOVACART Central Router with Admin Route Guards
+ * AppRoutes Component - NOVACART Central Router with Preferences & Admin Route Guards
  */
 const AppRoutes = () => {
   return (
@@ -43,6 +44,7 @@ const AppRoutes = () => {
         <Route path="register" element={<Register />} />
         <Route path="reset-password/:token" element={<ResetPassword />} />
         <Route path="ai-assistant" element={<AIAssistantPage />} />
+        <Route path="preferences" element={<Preferences />} />
 
         {/* Protected User Routes */}
         <Route element={<ProtectedRoute />}>
@@ -50,6 +52,7 @@ const AppRoutes = () => {
           <Route path="checkout" element={<Checkout />} />
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="dashboard/preferences" element={<Preferences />} />
         </Route>
 
         {/* 404 Fallback Route */}

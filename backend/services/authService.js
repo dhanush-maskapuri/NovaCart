@@ -76,6 +76,60 @@ const login = async ({ email, password }) => {
   };
 };
 
+// Google OAuth Login & Registration Handler
+const googleAuth = async ({ email, name, googleId, avatar }) => {
+  const normalizedEmail = (email || `google_user_${Date.now()}@novacart.com`).toLowerCase().trim();
+  let user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    user = await User.create({
+      name: name || 'Google User',
+      email: normalizedEmail,
+      password: `google_oauth_${Date.now()}_${Math.random()}`,
+      avatar: avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    });
+  }
+
+  const token = generateToken(user._id, user.role);
+  const refreshToken = generateRefreshToken(user._id);
+
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
+  return {
+    user: sanitizeUser(user),
+    token,
+    refreshToken,
+  };
+};
+
+// Apple OAuth Login & Registration Handler
+const appleAuth = async ({ email, name, appleId }) => {
+  const normalizedEmail = (email || `apple_user_${Date.now()}@novacart.com`).toLowerCase().trim();
+  let user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    user = await User.create({
+      name: name || 'Apple User',
+      email: normalizedEmail,
+      password: `apple_oauth_${Date.now()}_${Math.random()}`,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    });
+  }
+
+  const token = generateToken(user._id, user.role);
+  const refreshToken = generateRefreshToken(user._id);
+
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
+  return {
+    user: sanitizeUser(user),
+    token,
+    refreshToken,
+  };
+};
+
 const getMe = async (userId) => {
   const user = await User.findById(userId)
     .populate('wishlist')
@@ -180,7 +234,6 @@ const forgotPassword = async (email) => {
     };
   }
 
-  // Generate cryptographically secure reset token
   const resetToken = crypto.randomBytes(32).toString('hex');
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
@@ -240,6 +293,8 @@ const logoutUser = async (userId) => {
 module.exports = {
   register,
   login,
+  googleAuth,
+  appleAuth,
   getMe,
   updateProfile,
   changePassword,

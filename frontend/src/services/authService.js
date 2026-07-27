@@ -10,6 +10,16 @@ export const register = async (userData) => {
   return response.data;
 };
 
+export const googleLoginApi = async (data = {}) => {
+  const response = await api.post('/auth/google', data);
+  return response.data;
+};
+
+export const appleLoginApi = async (data = {}) => {
+  const response = await api.post('/auth/apple', data);
+  return response.data;
+};
+
 export const logout = async () => {
   const response = await api.post('/auth/logout');
   return response.data;

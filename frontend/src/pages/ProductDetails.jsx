@@ -18,6 +18,8 @@ import ProductGallery from '../components/product/ProductGallery';
 import Rating from '../components/product/Rating';
 import ReviewCard from '../components/product/ReviewCard';
 import ProductGrid from '../components/product/ProductGrid';
+import PriceHistoryWidget from '../components/product/PriceHistoryWidget';
+import EcoScoreBadge from '../components/product/EcoScoreBadge';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import EmptyState from '../components/common/EmptyState';
@@ -30,7 +32,7 @@ import { fadeIn } from '../animations/variants';
 import { formatCurrency, calculateGST } from '../utils/formatters';
 
 /**
- * ProductDetails Page Component - Backend API & Recently Viewed Tracking Integrated
+ * ProductDetails Page Component - Integrated with Price History & Sustainability Eco-Score
  */
 const ProductDetails = () => {
   const { id } = useParams();
@@ -180,8 +182,10 @@ const ProductDetails = () => {
       {/* Main Details Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         {/* Left Column: Image Gallery */}
-        <div className="lg:col-span-6 sticky top-24">
+        <div className="lg:col-span-6 sticky top-24 space-y-6">
           <ProductGallery images={imageGallery} title={name} />
+          {/* Price History Graph Widget */}
+          <PriceHistoryWidget currentPrice={price} originalPrice={originalPrice} />
         </div>
 
         {/* Right Column: Information & Actions */}
@@ -192,15 +196,7 @@ const ProductDetails = () => {
               <span className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                 {brand} • {category}
               </span>
-              {isStockAvailable ? (
-                <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200">
-                  In Stock ({stock} Available)
-                </span>
-              ) : (
-                <span className="text-[11px] font-black text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1">
-                  <FiAlertTriangle /> Out of Stock
-                </span>
-              )}
+              <EcoScoreBadge price={price} />
             </div>
 
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
@@ -237,18 +233,6 @@ const ProductDetails = () => {
               <span>Includes GST Tax Invoice ({formatCurrency(gstDetails.taxAmount)} Tax included)</span>
             </div>
           </div>
-
-          {/* Highlights List */}
-          {highlights && highlights.length > 0 && (
-            <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 space-y-1.5 text-xs">
-              <h4 className="font-extrabold text-indigo-700 dark:text-indigo-300">Key Highlights:</h4>
-              <ul className="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 font-medium">
-                {highlights.map((h, i) => (
-                  <li key={i}>{h}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {/* Description */}
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
     avatar: {
       type: String,
       default: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
@@ -67,38 +71,10 @@ const userSchema = new mongoose.Schema(
         ref: 'Product',
       },
     ],
-    continueShopping: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-      },
-    ],
-    notifications: [
-      {
-        id: String,
-        title: String,
-        message: String,
-        read: { type: Boolean, default: false },
-        date: { type: Date, default: Date.now },
-      },
-    ],
     rewardPoints: {
       type: Number,
       default: 250,
     },
-    coupons: [
-      {
-        code: String,
-        discountPercent: Number,
-        expiresAt: Date,
-      },
-    ],
-    orderHistory: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order',
-      },
-    ],
     refreshToken: {
       type: String,
       select: false,

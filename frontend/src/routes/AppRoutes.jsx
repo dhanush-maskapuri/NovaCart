@@ -15,15 +15,19 @@ import Orders from '../pages/Orders';
 import AIAssistantPage from '../pages/AIAssistantPage';
 import NotFound from '../pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute';
 
 // Admin Suite Pages
 import AdminDashboard from '../pages/admin/Dashboard';
 import AdminProducts from '../pages/admin/Products';
+import AdminCategories from '../pages/admin/Categories';
+import AdminInventory from '../pages/admin/Inventory';
 import AdminOrders from '../pages/admin/Orders';
 import AdminUsers from '../pages/admin/Users';
+import AdminReviews from '../pages/admin/Reviews';
 
 /**
- * AppRoutes Component - NOVACART Central Router
+ * AppRoutes Component - NOVACART Central Router with Admin Route Guards
  */
 const AppRoutes = () => {
   return (
@@ -52,12 +56,17 @@ const AppRoutes = () => {
         <Route path="*" element={<NotFound />} />
       </Route>
 
-      {/* Merchant Admin Portal Routes */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="products" element={<AdminProducts />} />
-        <Route path="orders" element={<AdminOrders />} />
-        <Route path="users" element={<AdminUsers />} />
+      {/* Merchant Admin Portal Routes Protected by AdminRoute */}
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="inventory" element={<AdminInventory />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="reviews" element={<AdminReviews />} />
+        </Route>
       </Route>
     </Routes>
   );

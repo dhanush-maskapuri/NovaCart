@@ -4,6 +4,10 @@ import { ThemeProvider } from './context/ThemeContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { RecentlyViewedProvider } from './context/RecentlyViewedContext';
+import { CompareProvider } from './context/CompareContext';
+import CompareModal from './components/compare/CompareModal';
+import GiftFinderModal from './components/gift/GiftFinderModal';
+import AIAssistantFloating from './components/common/AIAssistantFloating';
 import AppRoutes from './routes/AppRoutes';
 
 /**
@@ -17,9 +21,14 @@ function App() {
         <CartProvider>
           <WishlistProvider>
             <RecentlyViewedProvider>
-              <Router>
-                <AppRoutes />
-              </Router>
+              <CompareProvider>
+                <Router>
+                  <AppRoutes />
+                  <CompareModal />
+                  <GiftFinderModal />
+                  <AIAssistantFloating />
+                </Router>
+              </CompareProvider>
             </RecentlyViewedProvider>
           </WishlistProvider>
         </CartProvider>

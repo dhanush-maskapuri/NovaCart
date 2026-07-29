@@ -33,7 +33,7 @@ const getHealthStatus = asyncHandler(async (req, res) => {
   const message = isHealthy ? MESSAGES.HEALTH.OK : MESSAGES.HEALTH.DEGRADED;
   const statusCode = isHealthy ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
 
-  return new ApiResponse(statusCode, message, healthData, null).send(res);
+  return ApiResponse.success(res, message, healthData, statusCode);
 });
 
 module.exports = {

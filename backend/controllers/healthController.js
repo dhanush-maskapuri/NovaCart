@@ -1,5 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
-const ApiResponse = require('../utils/ApiResponse');
+const ApiResponse = require('../utils/apiResponse');
 const { getDBStatus } = require('../database/connectDB');
 const HTTP_STATUS = require('../constants/httpStatusCodes');
 const MESSAGES = require('../constants/messages');
